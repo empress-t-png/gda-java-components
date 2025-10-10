@@ -8,25 +8,31 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.gda.system;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+
+import java.util.logging.Logger;
 
 import programmingtheiot.common.ConfigConst;
 
-
 /**
- * Shell representation of class for student implementation.
- * 
+ * System CPU utilization task.
+ * Retrieves the CPU utilization from the operating system.
  */
 public class SystemCpuUtilTask extends BaseSystemUtilTask
 {
+	// static
+	
+	private static final Logger _Logger =
+		Logger.getLogger(SystemCpuUtilTask.class.getName());
+	
+	
 	// constructors
 	
 	/**
-	 * Default.
-	 * 
+	 * Default constructor.
 	 */
 	public SystemCpuUtilTask()
 	{
@@ -36,10 +42,18 @@ public class SystemCpuUtilTask extends BaseSystemUtilTask
 	
 	// public methods
 	
+	/**
+	 * Retrieves the CPU utilization from the operating system.
+	 * 
+	 * @return float The CPU utilization as a percentage, or -1.0 if not supported.
+	 */
 	@Override
 	public float getTelemetryValue()
 	{
-		return 0.0f;
+		OperatingSystemMXBean mxBean = ManagementFactory.getOperatingSystemMXBean();
+		double cpuUtil = mxBean.getSystemLoadAverage();
+		
+		return (float) cpuUtil;
 	}
 	
 }

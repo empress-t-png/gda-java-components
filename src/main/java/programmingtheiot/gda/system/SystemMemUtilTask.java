@@ -8,25 +8,31 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.gda.system;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 
+import java.util.logging.Logger;
+
 import programmingtheiot.common.ConfigConst;
 
 /**
- * Shell representation of class for student implementation.
- * 
+ * System memory utilization task.
+ * Retrieves the JVM heap memory utilization.
  */
 public class SystemMemUtilTask extends BaseSystemUtilTask
 {
+	// static
+	
+	private static final Logger _Logger =
+		Logger.getLogger(SystemMemUtilTask.class.getName());
+	
+	
 	// constructors
 	
 	/**
-	 * Default.
-	 * 
+	 * Default constructor.
 	 */
 	public SystemMemUtilTask()
 	{
@@ -36,10 +42,23 @@ public class SystemMemUtilTask extends BaseSystemUtilTask
 	
 	// public methods
 	
+	/**
+	 * Retrieves the JVM heap memory utilization.
+	 * 
+	 * @return float The memory utilization as a percentage (0-100).
+	 */
 	@Override
 	public float getTelemetryValue()
 	{
-		return 0.0f;
+		MemoryUsage memUsage = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
+		double memUsed = (double) memUsage.getUsed();
+		double memMax  = (double) memUsage.getMax();
+		
+		_Logger.fine("Mem used: " + memUsed + "; Mem Max: " + memMax);
+		
+		double memUtil = (memUsed / memMax) * 100.0d;
+		
+		return (float) memUtil;
 	}
 	
 }

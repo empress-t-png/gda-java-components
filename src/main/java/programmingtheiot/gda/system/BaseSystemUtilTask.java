@@ -8,7 +8,6 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.gda.system;
 
 import java.util.logging.Logger;
@@ -16,7 +15,7 @@ import java.util.logging.Logger;
 import programmingtheiot.common.ConfigConst;
 
 /**
- *
+ * Base class for system utilization tasks.
  */
 public abstract class BaseSystemUtilTask
 {
@@ -28,22 +27,40 @@ public abstract class BaseSystemUtilTask
 	
 	// private
 	
-	private String name   = ConfigConst.NOT_SET;
-	private int    typeID = ConfigConst.DEFAULT_TYPE_ID;
+	private String name = ConfigConst.NOT_SET;
+	private int typeID = ConfigConst.DEFAULT_TYPE_ID;
+	
 	
 	// constructors
 	
+	/**
+	 * Constructor.
+	 * 
+	 * @param name The name of the system utilization task.
+	 * @param typeID The type ID of the system utilization task.
+	 */
 	public BaseSystemUtilTask(String name, int typeID)
 	{
 		super();
+		
+		if (name != null) {
+			this.name = name;
+		}
+		
+		this.typeID = typeID;
 	}
 	
 	
 	// public methods
 	
+	/**
+	 * Returns the name of the system utilization task.
+	 * 
+	 * @return String
+	 */
 	public String getName()
 	{
-		return null;
+		return this.name;
 	}
 	
 	/**
@@ -53,7 +70,7 @@ public abstract class BaseSystemUtilTask
 	 */
 	public int getTypeID()
 	{
-		return 0;
+		return this.typeID;
 	}
 	
 	/**

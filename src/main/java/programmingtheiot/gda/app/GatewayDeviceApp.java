@@ -15,7 +15,6 @@ import org.apache.commons.cli.*;
 
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
-import programmingtheiot.gda.system.SystemPerformanceManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,7 @@ public class GatewayDeviceApp
 	// private var's
 	
 	private String configFile = ConfigConst.DEFAULT_CONFIG_FILE_NAME;
-	private SystemPerformanceManager sysPerfMgr = null;
+	private DeviceDataManager dataMgr = null;
 
 	// constructors
 	
@@ -51,8 +50,6 @@ public class GatewayDeviceApp
 		super();
 		
 		_Logger.info("Initializing GDA...");
-		
-		this.sysPerfMgr = new SystemPerformanceManager();
 	}
 	
 	
@@ -151,13 +148,15 @@ public class GatewayDeviceApp
 		_Logger.info("Starting GDA...");
 		
 		try {
-			if (this.sysPerfMgr.startManager()) {
-				_Logger.info("GDA started successfully.");
-			} else {
-				_Logger.warning("Failed to start system performance manager!");
-				
-				stopApp(-1);
+			if (! ConfigUtil.getInstance().getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.TEST_EMPTY_APP_KEY)) {
+				this.dataMgr = new DeviceDataManager();
 			}
+			
+			if (this.dataMgr != null) {
+				this.dataMgr.startManager();
+			}
+			
+			_Logger.info("GDA started successfully.");
 		} catch (Exception e) {
 			_Logger.log(Level.SEVERE, "Failed to start GDA. Exiting.", e);
 			
@@ -175,11 +174,11 @@ public class GatewayDeviceApp
 		_Logger.info("Stopping GDA...");
 		
 		try {
-			if (this.sysPerfMgr.stopManager()) {
-				_Logger.log(Level.INFO, "GDA stopped successfully with exit code {0}.", code);
-			} else {
-				_Logger.warning("Failed to stop system performance manager!");
+			if (this.dataMgr != null) {
+				this.dataMgr.stopManager();
 			}
+			
+			_Logger.log(Level.INFO, "GDA stopped successfully with exit code {0}.", code);
 		} catch (Exception e) {
 			_Logger.log(Level.SEVERE, "Failed to cleanly stop GDA. Exiting.", e);
 		}

@@ -75,23 +75,6 @@ public class DataUtil
 	}
 	
 	/**
-	 * Converts ActuatorData to simplified time and value JSON string.
-	 * 
-	 * @param actuatorData The ActuatorData instance to convert.
-	 * @return JSON string with time and value only, or null if actuatorData is null.
-	 */
-	public String actuatorDataToTimeAndValueJson(ActuatorData actuatorData)
-	{
-		if (actuatorData != null) {
-			TimeAndValuePayloadData payloadData = new TimeAndValuePayloadData();
-			payloadData.setTimeStamp(actuatorData.getTimeStamp());
-			payloadData.setValue(actuatorData.getValue());
-			return this.gson.toJson(payloadData);
-		}
-		return null;
-	}
-	
-	/**
 	 * Converts SensorData to JSON string.
 	 * 
 	 * @param sensorData The SensorData instance to convert.
@@ -101,23 +84,6 @@ public class DataUtil
 	{
 		if (sensorData != null) {
 			return this.gson.toJson(sensorData);
-		}
-		return null;
-	}
-	
-	/**
-	 * Converts SensorData to simplified time and value JSON string.
-	 * 
-	 * @param sensorData The SensorData instance to convert.
-	 * @return JSON string with time and value only, or null if sensorData is null.
-	 */
-	public String sensorDataToTimeAndValueJson(SensorData sensorData)
-	{
-		if (sensorData != null) {
-			TimeAndValuePayloadData payloadData = new TimeAndValuePayloadData();
-			payloadData.setTimeStamp(sensorData.getTimeStamp());
-			payloadData.setValue(sensorData.getValue());
-			return this.gson.toJson(payloadData);
 		}
 		return null;
 	}

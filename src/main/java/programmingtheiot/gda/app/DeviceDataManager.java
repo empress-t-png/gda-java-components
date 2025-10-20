@@ -8,7 +8,6 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.gda.app;
 
 import java.util.logging.Level;
@@ -34,8 +33,10 @@ import programmingtheiot.gda.connection.MqttClientConnector;
 import programmingtheiot.gda.connection.RedisPersistenceAdapter;
 import programmingtheiot.gda.connection.SmtpClientConnector;
 
+import programmingtheiot.gda.system.SystemPerformanceManager;
+
 /**
- * Shell representation of class for student implementation.
+ * Implementation of DeviceDataManager for Lab Module 05.
  *
  */
 public class DeviceDataManager implements IDataMessageListener
@@ -52,6 +53,7 @@ public class DeviceDataManager implements IDataMessageListener
 	private boolean enableCloudClient = false;
 	private boolean enableSmtpClient = false;
 	private boolean enablePersistenceClient = false;
+	private boolean enableSystemPerf = false;
 	
 	private IActuatorDataListener actuatorDataListener = null;
 	private IPubSubClient mqttClient = null;
@@ -59,12 +61,35 @@ public class DeviceDataManager implements IDataMessageListener
 	private IPersistenceClient persistenceClient = null;
 	private IRequestResponseClient smtpClient = null;
 	private CoapServerGateway coapServer = null;
+	private SystemPerformanceManager sysPerfMgr = null;
 	
 	// constructors
 	
 	public DeviceDataManager()
 	{
 		super();
+		
+		ConfigUtil configUtil = ConfigUtil.getInstance();
+		
+		this.enableMqttClient =
+			configUtil.getBoolean(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_MQTT_CLIENT_KEY);
+		
+		this.enableCoapServer =
+			configUtil.getBoolean(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_COAP_SERVER_KEY);
+		
+		this.enableCloudClient =
+			configUtil.getBoolean(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_CLOUD_CLIENT_KEY);
+		
+		this.enableSmtpClient =
+			configUtil.getBoolean(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_SMTP_CLIENT_KEY);
+		
+		this.enablePersistenceClient =
+			configUtil.getBoolean(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_PERSISTENCE_CLIENT_KEY);
 		
 		initConnections();
 	}
@@ -87,45 +112,97 @@ public class DeviceDataManager implements IDataMessageListener
 	@Override
 	public boolean handleActuatorCommandResponse(ResourceNameEnum resourceName, ActuatorData data)
 	{
-		return false;
+		if (data != null) {
+			_Logger.info("Handling actuator response: " + data.getName());
+			
+			if (data.hasError()) {
+				_Logger.warning("Error flag set for ActuatorData instance.");
+			}
+			
+			return true;
+		} else {
+			return false;
+		}
 	}
-
+	
 	@Override
 	public boolean handleActuatorCommandRequest(ResourceNameEnum resourceName, ActuatorData data)
 	{
-		return false;
+		if (data != null) {
+			_Logger.info("Handling actuator command: " + data.getName());
+			return true;
+		} else {
+			return false;
+		}
 	}
-
+	
 	@Override
 	public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg)
 	{
-		return false;
+		if (msg != null) {
+			_Logger.info("Handling incoming generic message: " + msg);
+			return true;
+		} else {
+			return false;
+		}
 	}
-
+	
 	@Override
 	public boolean handleSensorMessage(ResourceNameEnum resourceName, SensorData data)
 	{
-		return false;
+		if (data != null) {
+			_Logger.info("Handling sensor message: " + data.getName());
+			
+			if (data.hasError()) {
+				_Logger.warning("Error flag set for SensorData instance.");
+			}
+			
+			return true;
+		} else {
+			return false;
+		}
 	}
-
+	
 	@Override
 	public boolean handleSystemPerformanceMessage(ResourceNameEnum resourceName, SystemPerformanceData data)
 	{
-		return false;
+		if (data != null) {
+			_Logger.info("Handling system performance message: " + data.getName());
+			
+			if (data.hasError()) {
+				_Logger.warning("Error flag set for SystemPerformanceData instance.");
+			}
+			
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 	public void setActuatorDataListener(String name, IActuatorDataListener listener)
 	{
+		if (listener != null) {
+			this.actuatorDataListener = listener;
+		}
 	}
 	
 	public void startManager()
 	{
+		_Logger.info("Starting DeviceDataManager...");
+		
+		if (this.sysPerfMgr != null) {
+			this.sysPerfMgr.startManager();
+		}
 	}
 	
 	public void stopManager()
 	{
+		_Logger.info("Stopping DeviceDataManager...");
+		
+		if (this.sysPerfMgr != null) {
+			this.sysPerfMgr.stopManager();
+		}
 	}
-
 	
 	// private methods
 	
@@ -136,6 +213,32 @@ public class DeviceDataManager implements IDataMessageListener
 	 */
 	private void initConnections()
 	{
+		ConfigUtil configUtil = ConfigUtil.getInstance();
+		
+		this.enableSystemPerf =
+			configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_SYSTEM_PERF_KEY);
+		
+		if (this.enableSystemPerf) {
+			this.sysPerfMgr = new SystemPerformanceManager();
+			this.sysPerfMgr.setDataMessageListener(this);
+		}
+		
+		// Connection classes will be implemented in later lab modules
+		if (this.enableMqttClient) {
+			// TODO: implement this in Lab Module 7
+		}
+		
+		if (this.enableCoapServer) {
+			// TODO: implement this in Lab Module 8
+		}
+		
+		if (this.enableCloudClient) {
+			// TODO: implement this in Lab Module 10
+		}
+		
+		if (this.enablePersistenceClient) {
+			// TODO: implement this as an optional exercise in Lab Module 5
+		}
 	}
 	
 }

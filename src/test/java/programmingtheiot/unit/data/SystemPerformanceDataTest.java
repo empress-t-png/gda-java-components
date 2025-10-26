@@ -5,20 +5,14 @@
  * 
  * Copyright (c) 2020 - 2025 by Andrew D. King
  */ 
-
 package programmingtheiot.unit.data;
-
 import static org.junit.Assert.*;
-
 import java.util.logging.Logger;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.data.SystemPerformanceData;
-
 /**
  * This test case class contains very basic unit tests for
  * SystemPerformanceData. It should not be considered complete,

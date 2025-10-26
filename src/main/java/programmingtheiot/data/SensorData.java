@@ -8,13 +8,9 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.data;
-
 import java.io.Serializable;
-
 import programmingtheiot.common.ConfigConst;
-
 /**
  * Shell representation of class for student implementation.
  *
@@ -23,32 +19,49 @@ public class SensorData extends BaseIotData implements Serializable
 {
 	// static
 	
+	public static final int DEFAULT_STATUS = 0;
 	
 	// private var's
 	
+	private float value = ConfigConst.DEFAULT_VAL;
+	private int sensorType = ConfigConst.DEFAULT_SENSOR_TYPE;
     
 	// constructors
 	
 	public SensorData()
 	{
 		super();
+		super.setName(ConfigConst.NOT_SET);
 	}
 	
 	public SensorData(int sensorType)
 	{
 		super();
+		super.setName(ConfigConst.NOT_SET);
+		this.sensorType = sensorType;
 	}
 	
 	
 	// public methods
 	
+	public int getSensorType()
+	{
+		return this.sensorType;
+	}
+	
 	public float getValue()
 	{
-		return 0.0f;
+		return this.value;
+	}
+	
+	public void setSensorType(int sensorType)
+	{
+		this.sensorType = sensorType;
 	}
 	
 	public void setValue(float val)
 	{
+		this.value = val;
 	}
 	
 	/**
@@ -75,6 +88,11 @@ public class SensorData extends BaseIotData implements Serializable
 	 */
 	protected void handleUpdateData(BaseIotData data)
 	{
+		if (data instanceof SensorData) {
+			SensorData sData = (SensorData) data;
+			this.value = sData.getValue();
+			this.sensorType = sData.getSensorType();
+		}
 	}
 	
 }

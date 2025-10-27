@@ -8,7 +8,6 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.gda.connection;
 
 import java.util.Properties;
@@ -43,6 +42,18 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	
 	// params
 	
+	private String protocol = ConfigConst.DEFAULT_MQTT_PROTOCOL;
+	private String host = ConfigConst.DEFAULT_HOST;
+	private int port = ConfigConst.DEFAULT_MQTT_PORT;
+	private int brokerKeepAlive = ConfigConst.DEFAULT_KEEP_ALIVE;
+	private String clientID = null;
+	
+	private IConnectionListener connListener = null;
+	private IDataMessageListener dataMsgListener = null;
+	
+	private MqttClient mqttClient = null;
+	private MqttConnectOptions connOpts = null;
+	private MemoryPersistence persistence = null;
 	
 	// constructors
 	
@@ -53,6 +64,28 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	public MqttClientConnector()
 	{
 		super();
+		
+		ConfigUtil configUtil = ConfigUtil.getInstance();
+		
+		this.host = configUtil.getProperty(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.HOST_KEY, ConfigConst.DEFAULT_HOST);
+		this.port = configUtil.getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.PORT_KEY, ConfigConst.DEFAULT_MQTT_PORT);
+		this.brokerKeepAlive = configUtil.getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
+		this.clientID = MqttClient.generateClientId();
+		
+		this.persistence = new MemoryPersistence();
+		this.connOpts = new MqttConnectOptions();
+		this.connOpts.setKeepAliveInterval(this.brokerKeepAlive);
+		this.connOpts.setCleanSession(true);
+		this.connOpts.setAutomaticReconnect(true);
+		
+		try {
+			this.mqttClient = new MqttClient(this.protocol + "://" + this.host + ":" + this.port, this.clientID, this.persistence);
+			this.mqttClient.setCallback(this);
+			
+			_Logger.info("MQTT client created: " + this.clientID);
+		} catch (MqttException e) {
+			_Logger.log(Level.SEVERE, "Failed to create MQTT client", e);
+		}
 	}
 	
 	
@@ -61,47 +94,151 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public boolean connectClient()
 	{
-		return false;
+		if (this.mqttClient == null) {
+			_Logger.warning("MQTT client is not initialized.");
+			return false;
+		}
+		
+		if (this.mqttClient.isConnected()) {
+			_Logger.warning("MQTT client is already connected.");
+			return false;  // CHANGED from true to false
+		}
+		
+		try {
+			_Logger.info("Connecting to MQTT broker: " + this.protocol + "://" + this.host + ":" + this.port);
+			this.mqttClient.connect(this.connOpts);
+			return true;
+		} catch (MqttException e) {
+			_Logger.log(Level.SEVERE, "Failed to connect to MQTT broker", e);
+			return false;
+		}
 	}
 
 	@Override
 	public boolean disconnectClient()
 	{
-		return false;
+		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
+			_Logger.warning("MQTT client is not connected.");
+			return false;
+		}
+		
+		try {
+			_Logger.info("Disconnecting from MQTT broker: " + this.host);
+			this.mqttClient.disconnect();
+			return true;
+		} catch (MqttException e) {
+			_Logger.log(Level.SEVERE, "Failed to disconnect from MQTT broker", e);
+			return false;
+		}
 	}
 
 	public boolean isConnected()
 	{
-		return false;
+		return (this.mqttClient != null && this.mqttClient.isConnected());
 	}
 	
 	@Override
 	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos)
 	{
-		return false;
+		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
+			_Logger.warning("MQTT client is not connected. Cannot publish message.");
+			return false;
+		}
+		
+		if (topicName == null) {
+			_Logger.warning("Topic name is null. Cannot publish message.");
+			return false;
+		}
+		
+		if (qos < 0 || qos > 2) {
+			_Logger.warning("Invalid QoS: " + qos + ". Using default QoS: 0");
+			qos = 0;
+		}
+		
+		try {
+			String topic = topicName.getResourceName();
+			MqttMessage mqttMsg = new MqttMessage(msg.getBytes());
+			mqttMsg.setQos(qos);
+			
+			_Logger.info("Publishing message to topic: " + topic);
+			this.mqttClient.publish(topic, mqttMsg);
+			return true;
+		} catch (MqttException e) {
+			_Logger.log(Level.SEVERE, "Failed to publish message", e);
+			return false;
+		}
 	}
 
 	@Override
 	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos)
 	{
-		return false;
+		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
+			_Logger.warning("MQTT client is not connected. Cannot subscribe to topic.");
+			return false;
+		}
+		
+		if (topicName == null) {
+			_Logger.warning("Topic name is null. Cannot subscribe.");
+			return false;
+		}
+		
+		if (qos < 0 || qos > 2) {
+			_Logger.warning("Invalid QoS: " + qos + ". Using default QoS: 0");
+			qos = 0;
+		}
+		
+		try {
+			String topic = topicName.getResourceName();
+			_Logger.info("Subscribing to topic: " + topic);
+			this.mqttClient.subscribe(topic, qos);
+			return true;
+		} catch (MqttException e) {
+			_Logger.log(Level.SEVERE, "Failed to subscribe to topic", e);
+			return false;
+		}
 	}
 
 	@Override
 	public boolean unsubscribeFromTopic(ResourceNameEnum topicName)
 	{
-		return false;
+		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
+			_Logger.warning("MQTT client is not connected. Cannot unsubscribe from topic.");
+			return false;
+		}
+		
+		if (topicName == null) {
+			_Logger.warning("Topic name is null. Cannot unsubscribe.");
+			return false;
+		}
+		
+		try {
+			String topic = topicName.getResourceName();
+			_Logger.info("Unsubscribing from topic: " + topic);
+			this.mqttClient.unsubscribe(topic);
+			return true;
+		} catch (MqttException e) {
+			_Logger.log(Level.SEVERE, "Failed to unsubscribe from topic", e);
+			return false;
+		}
 	}
 
 	@Override
 	public boolean setConnectionListener(IConnectionListener listener)
 	{
+		if (listener != null) {
+			this.connListener = listener;
+			return true;
+		}
 		return false;
 	}
 	
 	@Override
 	public boolean setDataMessageListener(IDataMessageListener listener)
 	{
+		if (listener != null) {
+			this.dataMsgListener = listener;
+			return true;
+		}
 		return false;
 	}
 	
@@ -110,21 +247,48 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public void connectComplete(boolean reconnect, String serverURI)
 	{
+		_Logger.info("[Callback] Connected to MQTT broker: " + serverURI + " (reconnect=" + reconnect + ")");
+		
+		if (this.connListener != null) {
+			this.connListener.onConnect();
+		}
 	}
 
 	@Override
 	public void connectionLost(Throwable t)
 	{
+		_Logger.warning("[Callback] Lost connection to MQTT broker: " + t.getMessage());
+		
+		if (this.connListener != null) {
+			this.connListener.onDisconnect();
+		}
 	}
 	
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken token)
 	{
+		_Logger.fine("[Callback] Message delivery complete.");
 	}
 	
 	@Override
 	public void messageArrived(String topic, MqttMessage msg) throws Exception
 	{
+		_Logger.info("[Callback] Message arrived on topic: " + topic);
+		
+		if (this.dataMsgListener != null) {
+			try {
+				String payload = new String(msg.getPayload());
+				ResourceNameEnum resource = ResourceNameEnum.getResourceNameEnum(topic);
+				
+				if (resource != null) {
+					this.dataMsgListener.handleIncomingMessage(resource, payload);
+				} else {
+					_Logger.warning("Unknown topic: " + topic);
+				}
+			} catch (Exception e) {
+				_Logger.log(Level.SEVERE, "Failed to handle incoming message", e);
+			}
+		}
 	}
 
 	

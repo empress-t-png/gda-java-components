@@ -47,6 +47,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	private int port = ConfigConst.DEFAULT_MQTT_PORT;
 	private int brokerKeepAlive = ConfigConst.DEFAULT_KEEP_ALIVE;
 	private String clientID = null;
+	private String brokerAddr = null;
 	
 	private IConnectionListener connListener = null;
 	private IDataMessageListener dataMsgListener = null;
@@ -67,25 +68,39 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 		
 		ConfigUtil configUtil = ConfigUtil.getInstance();
 		
-		this.host = configUtil.getProperty(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.HOST_KEY, ConfigConst.DEFAULT_HOST);
-		this.port = configUtil.getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.PORT_KEY, ConfigConst.DEFAULT_MQTT_PORT);
-		this.brokerKeepAlive = configUtil.getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
+		this.host = 
+			configUtil.getProperty(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.HOST_KEY, ConfigConst.DEFAULT_HOST);
+		
+		this.port = 
+			configUtil.getInteger(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.PORT_KEY, ConfigConst.DEFAULT_MQTT_PORT);
+		
+		this.brokerKeepAlive = 
+			configUtil.getInteger(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
+		
+		// NOTE: paho Java client requires a client ID
 		this.clientID = MqttClient.generateClientId();
 		
+		// these are specific to the MQTT connection which will be used during connect
 		this.persistence = new MemoryPersistence();
 		this.connOpts = new MqttConnectOptions();
+		
 		this.connOpts.setKeepAliveInterval(this.brokerKeepAlive);
+		
+		// NOTE: If using a random clientID for each new connection,
+		// clean session should be 'true'; see MQTT spec for details
 		this.connOpts.setCleanSession(true);
+		
+		// NOTE: Auto-reconnect can be a useful connection recovery feature
 		this.connOpts.setAutomaticReconnect(true);
 		
-		try {
-			this.mqttClient = new MqttClient(this.protocol + "://" + this.host + ":" + this.port, this.clientID, this.persistence);
-			this.mqttClient.setCallback(this);
-			
-			_Logger.info("MQTT client created: " + this.clientID);
-		} catch (MqttException e) {
-			_Logger.log(Level.SEVERE, "Failed to create MQTT client", e);
-		}
+		// NOTE: URL does not have a protocol handler for "tcp",
+		// so we need to construct the URL manually
+		this.brokerAddr = this.protocol + "://" + this.host + ":" + this.port;
+		
+		_Logger.info("MQTT client connector initialized for broker: " + this.brokerAddr);
 	}
 	
 	
@@ -94,42 +109,44 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public boolean connectClient()
 	{
-		if (this.mqttClient == null) {
-			_Logger.warning("MQTT client is not initialized.");
-			return false;
-		}
-		
-		if (this.mqttClient.isConnected()) {
-			_Logger.warning("MQTT client is already connected.");
-			return false;  // CHANGED from true to false
-		}
-		
 		try {
-			_Logger.info("Connecting to MQTT broker: " + this.protocol + "://" + this.host + ":" + this.port);
-			this.mqttClient.connect(this.connOpts);
-			return true;
+			if (this.mqttClient == null) {
+				this.mqttClient = new MqttClient(this.brokerAddr, this.clientID, this.persistence);
+				this.mqttClient.setCallback(this);
+			}
+			
+			if (! this.mqttClient.isConnected()) {
+				_Logger.info("MQTT client connecting to broker: " + this.brokerAddr);
+				this.mqttClient.connect(this.connOpts);
+				return true;
+			} else {
+				_Logger.warning("MQTT client already connected to broker: " + this.brokerAddr);
+			}
 		} catch (MqttException e) {
-			_Logger.log(Level.SEVERE, "Failed to connect to MQTT broker", e);
-			return false;
+			_Logger.log(Level.SEVERE, "Failed to connect MQTT client to broker.", e);
 		}
+		
+		return false;
 	}
 
 	@Override
 	public boolean disconnectClient()
 	{
-		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
-			_Logger.warning("MQTT client is not connected.");
-			return false;
+		try {
+			if (this.mqttClient != null) {
+				if (this.mqttClient.isConnected()) {
+					_Logger.info("Disconnecting MQTT client from broker: " + this.brokerAddr);
+					this.mqttClient.disconnect();
+					return true;
+				} else {
+					_Logger.warning("MQTT client not connected to broker: " + this.brokerAddr);
+				}
+			}
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Failed to disconnect MQTT client from broker: " + this.brokerAddr, e);
 		}
 		
-		try {
-			_Logger.info("Disconnecting from MQTT broker: " + this.host);
-			this.mqttClient.disconnect();
-			return true;
-		} catch (MqttException e) {
-			_Logger.log(Level.SEVERE, "Failed to disconnect from MQTT broker", e);
-			return false;
-		}
+		return false;
 	}
 
 	public boolean isConnected()

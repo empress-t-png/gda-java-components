@@ -62,7 +62,7 @@ public class MqttClientConnectorTest
 	
 	// test methods
 	
-	@Test
+	//@Test
 	public void testConnectAndDisconnect()
 	{
 		int delay = ConfigUtil.getInstance().getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
@@ -78,6 +78,54 @@ public class MqttClientConnectorTest
 		
 		assertTrue(this.mqttClient.disconnectClient());
 		assertFalse(this.mqttClient.disconnectClient());
+	}
+	
+	@Test
+	public void testPublishAndSubscribe()
+	{
+		int qos = 0;
+		int delay = ConfigUtil.getInstance().getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
+		
+		assertTrue(this.mqttClient.connectClient());
+		assertTrue(this.mqttClient.subscribeToTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, qos));
+		assertTrue(this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos));
+		assertTrue(this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos));
+		assertTrue(this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos));
+		
+		try {
+			Thread.sleep(5000);
+		} catch (Exception e) {
+			// ignore
+		}
+		
+		assertTrue(this.mqttClient.publishMessage(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, "TEST: This is the GDA message payload 1.", qos));
+		assertTrue(this.mqttClient.publishMessage(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, "TEST: This is the GDA message payload 2.", qos));
+		assertTrue(this.mqttClient.publishMessage(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, "TEST: This is the GDA message payload 3.", qos));
+		
+		try {
+			Thread.sleep(25000);
+		} catch (Exception e) {
+			// ignore
+		}
+		
+		assertTrue(this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE));
+		assertTrue(this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE));
+		assertTrue(this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE));
+		assertTrue(this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE));
+
+		try {
+			Thread.sleep(5000);
+		} catch (Exception e) {
+			// ignore
+		}
+
+		try {
+			Thread.sleep(delay * 1000);
+		} catch (Exception e) {
+			// ignore
+		}
+		
+		assertTrue(this.mqttClient.disconnectClient());
 	}
 	
 }

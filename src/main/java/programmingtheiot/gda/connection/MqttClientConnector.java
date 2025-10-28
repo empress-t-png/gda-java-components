@@ -157,86 +157,73 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos)
 	{
-		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
-			_Logger.warning("MQTT client is not connected. Cannot publish message.");
+		if (topicName == null) {
+			_Logger.warning("Resource is null. Unable to publish message: " + this.brokerAddr);
 			return false;
 		}
 		
-		if (topicName == null) {
-			_Logger.warning("Topic name is null. Cannot publish message.");
+		if (msg == null || msg.length() == 0) {
+			_Logger.warning("Message is null or empty. Unable to publish message: " + this.brokerAddr);
 			return false;
 		}
 		
 		if (qos < 0 || qos > 2) {
-			_Logger.warning("Invalid QoS: " + qos + ". Using default QoS: 0");
-			qos = 0;
+			qos = ConfigConst.DEFAULT_QOS;
 		}
 		
 		try {
-			String topic = topicName.getResourceName();
-			MqttMessage mqttMsg = new MqttMessage(msg.getBytes());
+			byte[] payload = msg.getBytes();
+			MqttMessage mqttMsg = new MqttMessage(payload);
 			mqttMsg.setQos(qos);
-			
-			_Logger.info("Publishing message to topic: " + topic);
-			this.mqttClient.publish(topic, mqttMsg);
+			this.mqttClient.publish(topicName.getResourceName(), mqttMsg);
 			return true;
-		} catch (MqttException e) {
-			_Logger.log(Level.SEVERE, "Failed to publish message", e);
-			return false;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Failed to publish message to topic: " + topicName, e);
 		}
+		
+		return false;
 	}
 
 	@Override
 	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos)
 	{
-		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
-			_Logger.warning("MQTT client is not connected. Cannot subscribe to topic.");
-			return false;
-		}
-		
 		if (topicName == null) {
-			_Logger.warning("Topic name is null. Cannot subscribe.");
+			_Logger.warning("Resource is null. Unable to subscribe to topic: " + this.brokerAddr);
 			return false;
 		}
 		
 		if (qos < 0 || qos > 2) {
-			_Logger.warning("Invalid QoS: " + qos + ". Using default QoS: 0");
-			qos = 0;
+			qos = ConfigConst.DEFAULT_QOS;
 		}
 		
 		try {
-			String topic = topicName.getResourceName();
-			_Logger.info("Subscribing to topic: " + topic);
-			this.mqttClient.subscribe(topic, qos);
+			this.mqttClient.subscribe(topicName.getResourceName(), qos);
+			_Logger.info("Successfully subscribed to topic: " + topicName.getResourceName());
 			return true;
-		} catch (MqttException e) {
-			_Logger.log(Level.SEVERE, "Failed to subscribe to topic", e);
-			return false;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Failed to subscribe to topic: " + topicName, e);
 		}
+		
+		return false;
 	}
 
 	@Override
 	public boolean unsubscribeFromTopic(ResourceNameEnum topicName)
 	{
-		if (this.mqttClient == null || !this.mqttClient.isConnected()) {
-			_Logger.warning("MQTT client is not connected. Cannot unsubscribe from topic.");
-			return false;
-		}
-		
 		if (topicName == null) {
-			_Logger.warning("Topic name is null. Cannot unsubscribe.");
+			_Logger.warning("Resource is null. Unable to unsubscribe from topic: " + this.brokerAddr);
 			return false;
 		}
 		
 		try {
-			String topic = topicName.getResourceName();
-			_Logger.info("Unsubscribing from topic: " + topic);
-			this.mqttClient.unsubscribe(topic);
+			this.mqttClient.unsubscribe(topicName.getResourceName());
+			_Logger.info("Successfully unsubscribed from topic: " + topicName.getResourceName());
 			return true;
-		} catch (MqttException e) {
-			_Logger.log(Level.SEVERE, "Failed to unsubscribe from topic", e);
-			return false;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Failed to unsubscribe from topic: " + topicName, e);
 		}
+		
+		return false;
 	}
 
 	@Override
@@ -284,30 +271,13 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken token)
 	{
-		// Logging level may need to be adjusted to see output in log file / console
-		_Logger.fine("Delivered MQTT message with ID: " + token.getMessageId());
+		_Logger.info("Delivered MQTT message with ID: " + token.getMessageId());
 	}
 	
 	@Override
 	public void messageArrived(String topic, MqttMessage msg) throws Exception
 	{
-		// Logging level may need to be adjusted to reduce output in log file / console
 		_Logger.info("MQTT message arrived on topic: '" + topic + "'");
-		
-		if (this.dataMsgListener != null) {
-			try {
-				String payload = new String(msg.getPayload());
-				ResourceNameEnum resource = ResourceNameEnum.getResourceNameEnum(topic);
-				
-				if (resource != null) {
-					this.dataMsgListener.handleIncomingMessage(resource, payload);
-				} else {
-					_Logger.warning("Unknown topic: " + topic);
-				}
-			} catch (Exception e) {
-				_Logger.log(Level.SEVERE, "Failed to handle incoming message", e);
-			}
-		}
 	}
 
 	

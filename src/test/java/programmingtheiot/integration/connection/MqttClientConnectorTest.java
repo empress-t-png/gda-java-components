@@ -62,7 +62,9 @@ public class MqttClientConnectorTest
 	
 	// test methods
 	
-	//@Test
+	
+
+  //@Test	
 	public void testConnectAndDisconnect()
 	{
 		int delay = ConfigUtil.getInstance().getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);

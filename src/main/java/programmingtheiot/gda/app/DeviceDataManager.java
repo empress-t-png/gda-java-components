@@ -36,7 +36,7 @@ import programmingtheiot.gda.connection.SmtpClientConnector;
 import programmingtheiot.gda.system.SystemPerformanceManager;
 
 /**
- * Implementation of DeviceDataManager for Lab Module 07.
+ * Implementation of DeviceDataManager for Lab Module 08.
  *
  */
 public class DeviceDataManager implements IDataMessageListener
@@ -215,6 +215,15 @@ public class DeviceDataManager implements IDataMessageListener
 			}
 		}
 		
+		// START CoAP server
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.startServer()) {
+				_Logger.info("CoAP server started.");
+			} else {
+				_Logger.severe("Failed to start CoAP server. Check log file for details.");
+			}
+		}
+		
 		if (this.sysPerfMgr != null) {
 			this.sysPerfMgr.startManager();
 		}
@@ -226,6 +235,15 @@ public class DeviceDataManager implements IDataMessageListener
 		
 		if (this.sysPerfMgr != null) {
 			this.sysPerfMgr.stopManager();
+		}
+		
+		// STOP CoAP server
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.stopServer()) {
+				_Logger.info("CoAP server stopped.");
+			} else {
+				_Logger.severe("Failed to stop CoAP server. Check log file for details.");
+			}
 		}
 		
 		if (this.mqttClient != null) {
@@ -268,4 +286,20 @@ public class DeviceDataManager implements IDataMessageListener
 			configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_SYSTEM_PERF_KEY);
 		
 		if (this.enableSystemPerf) {
-			this.sysPerfMgr = new SystemPerformanceMana
+			this.sysPerfMgr = new SystemPerformanceManager();
+			this.sysPerfMgr.setDataMessageListener(this);
+		}
+		
+		if (this.enableMqttClient) {
+			_Logger.info("MQTT client is ENABLED - creating MQTT client connector...");
+			this.mqttClient = new MqttClientConnector();
+			this.mqttClient.setDataMessageListener(this);
+		}
+		
+		// CREATE CoAP server instance
+		if (this.enableCoapServer) {
+			_Logger.info("CoAP server is ENABLED - initializing CoAP server...");
+			this.coapServer = new CoapServerGateway(this);
+		}
+	}
+}

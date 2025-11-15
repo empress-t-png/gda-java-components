@@ -1,0 +1,45 @@
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--------------< [0;36mprogrammingtheiot.gda:gateway-device-app[0;1m >--------------[m
+[[1;34mINFO[m] [1mBuilding Gateway Device App 0.0.1[m
+[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mexec-maven-plugin:3.6.2:java[m [1m(default-cli)[m @ [36mgateway-device-app[0;1m ---[m
+Nov 12, 2025 5:36:08 PM programmingtheiot.gda.app.GatewayDeviceApp <init>
+INFO: Initializing GDA...
+Nov 12, 2025 5:36:08 PM programmingtheiot.gda.app.GatewayDeviceApp startApp
+INFO: Starting GDA...
+Nov 12, 2025 5:36:09 PM programmingtheiot.gda.connection.MqttClientConnector <init>
+INFO: MQTT client connector initialized for broker: tcp://localhost:1883
+Nov 12, 2025 5:36:09 PM programmingtheiot.gda.app.DeviceDataManager initConnections
+INFO: CoAP server is ENABLED - initializing CoAP server...
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Nov 12, 2025 5:36:09 PM programmingtheiot.gda.connection.CoapServerGateway initServer
+INFO: CoAP server initialized on port 5683.
+Nov 12, 2025 5:36:09 PM programmingtheiot.gda.app.GatewayDeviceApp startApp
+SEVERE: Failed to start GDA. Exiting.
+java.lang.IllegalArgumentException: '/' in 'PIOT/ConstrainedDevice/SensorMsg' is not supported by the implementation!
+	at org.eclipse.californium.core.CoapResource.<init>(CoapResource.java:234)
+	at org.eclipse.californium.core.CoapResource.<init>(CoapResource.java:212)
+	at programmingtheiot.gda.connection.handlers.GenericCoapResourceHandler.<init>(GenericCoapResourceHandler.java:60)
+	at programmingtheiot.gda.connection.handlers.GenericCoapResourceHandler.<init>(GenericCoapResourceHandler.java:50)
+	at programmingtheiot.gda.connection.CoapServerGateway.createResourceChain(CoapServerGateway.java:110)
+	at programmingtheiot.gda.connection.CoapServerGateway.addResource(CoapServerGateway.java:60)
+	at programmingtheiot.gda.app.DeviceDataManager.initConnections(DeviceDataManager.java:248)
+	at programmingtheiot.gda.app.DeviceDataManager.<init>(DeviceDataManager.java:94)
+	at programmingtheiot.gda.app.GatewayDeviceApp.startApp(GatewayDeviceApp.java:152)
+	at programmingtheiot.gda.app.GatewayDeviceApp.main(GatewayDeviceApp.java:73)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.codehaus.mojo.exec.AbstractExecJavaBase.executeMainMethod(AbstractExecJavaBase.java:402)
+	at org.codehaus.mojo.exec.ExecJavaMojo.executeMainMethod(ExecJavaMojo.java:142)
+	at org.codehaus.mojo.exec.AbstractExecJavaBase.doExecClassLoader(AbstractExecJavaBase.java:377)
+	at org.codehaus.mojo.exec.AbstractExecJavaBase.lambda$execute$0(AbstractExecJavaBase.java:287)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+Nov 12, 2025 5:36:09 PM programmingtheiot.gda.app.GatewayDeviceApp stopApp
+INFO: Stopping GDA...
+Nov 12, 2025 5:36:09 PM programmingtheiot.gda.app.GatewayDeviceApp stopApp
+INFO: GDA stopped successfully with exit code -1.

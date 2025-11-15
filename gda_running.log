@@ -1,0 +1,40 @@
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--------------< [0;36mprogrammingtheiot.gda:gateway-device-app[0;1m >--------------[m
+[[1;34mINFO[m] [1mBuilding Gateway Device App 0.0.1[m
+[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mexec-maven-plugin:3.6.2:java[m [1m(default-cli)[m @ [36mgateway-device-app[0;1m ---[m
+Nov 12, 2025 6:03:26 PM programmingtheiot.gda.app.GatewayDeviceApp <init>
+INFO: Initializing GDA...
+Nov 12, 2025 6:03:26 PM programmingtheiot.gda.app.GatewayDeviceApp startApp
+INFO: Starting GDA...
+Nov 12, 2025 6:03:26 PM programmingtheiot.gda.connection.MqttClientConnector <init>
+INFO: MQTT client connector initialized for broker: tcp://localhost:1883
+Nov 12, 2025 6:03:26 PM programmingtheiot.gda.app.DeviceDataManager initConnections
+INFO: CoAP server is ENABLED - initializing CoAP server...
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Nov 12, 2025 6:03:27 PM programmingtheiot.gda.connection.CoapServerGateway initServer
+INFO: CoAP server initialized on port 5683.
+Nov 12, 2025 6:03:27 PM programmingtheiot.gda.app.DeviceDataManager startManager
+INFO: Starting DeviceDataManager...
+Nov 12, 2025 6:03:27 PM programmingtheiot.gda.system.SystemPerformanceManager startManager
+INFO: SystemPerformanceManager is starting...
+Nov 12, 2025 6:03:27 PM programmingtheiot.gda.connection.CoapServerGateway startServer
+INFO: CoAP server started successfully.
+Nov 12, 2025 6:03:27 PM programmingtheiot.gda.app.GatewayDeviceApp startApp
+INFO: GDA started successfully.
+Nov 12, 2025 6:03:28 PM programmingtheiot.gda.system.SystemPerformanceManager handleTelemetry
+INFO: Handle telemetry results: cpuUtil=1.7548828, memUtil=2.8307307
+Nov 12, 2025 6:04:27 PM programmingtheiot.gda.app.GatewayDeviceApp stopApp
+INFO: Stopping GDA...
+Nov 12, 2025 6:04:27 PM programmingtheiot.gda.app.DeviceDataManager stopManager
+INFO: Stopping DeviceDataManager...
+Nov 12, 2025 6:04:27 PM programmingtheiot.gda.system.SystemPerformanceManager stopManager
+INFO: SystemPerformanceManager is stopped.
+Nov 12, 2025 6:04:27 PM programmingtheiot.gda.connection.CoapServerGateway stopServer
+INFO: CoAP server stopped successfully.
+Nov 12, 2025 6:04:27 PM programmingtheiot.gda.app.GatewayDeviceApp stopApp
+INFO: GDA stopped successfully with exit code 0.

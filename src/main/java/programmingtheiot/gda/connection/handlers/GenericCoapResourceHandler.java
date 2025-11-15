@@ -8,7 +8,6 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.gda.connection.handlers;
 
 import java.util.logging.Logger;
@@ -21,7 +20,6 @@ import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
-
 
 /**
  * Shell representation of class for student implementation.

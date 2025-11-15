@@ -25,9 +25,11 @@ import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 import programmingtheiot.gda.connection.handlers.GenericCoapResourceHandler;
+import programmingtheiot.gda.connection.handlers.UpdateSystemPerformanceResourceHandler;
+import programmingtheiot.gda.connection.handlers.UpdateTelemetryResourceHandler;
 
 /**
- * Shell representation of class for student implementation.
+ * CoAP Server Gateway implementation.
  * 
  */
 public class CoapServerGateway
@@ -139,6 +141,19 @@ public class CoapServerGateway
 		// Create the CoAP server instance
 		this.coapServer = new CoapServer();
 		
-		_Logger.info("CoAP server initialized on port 5683.");
+		// Create and add resource handlers (use simple names without '/')
+		UpdateSystemPerformanceResourceHandler sysPerfHandler = 
+			new UpdateSystemPerformanceResourceHandler("SystemPerfMsg");
+		sysPerfHandler.setDataMessageListener(this.dataMsgListener);
+		
+		UpdateTelemetryResourceHandler telemetryHandler = 
+			new UpdateTelemetryResourceHandler("SensorMsg");
+		telemetryHandler.setDataMessageListener(this.dataMsgListener);
+		
+		// Add resource handlers to server
+		this.coapServer.add(sysPerfHandler);
+		this.coapServer.add(telemetryHandler);
+		
+		_Logger.info("CoAP server initialized on port 5683 with resource handlers.");
 	}
 }

@@ -8,13 +8,9 @@
  * provided within in order to meet the needs of your specific
  * Programming the Internet of Things project.
  */
-
 package programmingtheiot.data;
-
 import java.io.Serializable;
-
 import programmingtheiot.common.ConfigConst;
-
 /**
  * Shell representation of class for student implementation.
  *
@@ -23,15 +19,20 @@ public class SystemPerformanceData extends BaseIotData implements Serializable
 {
 	// static
 	
+	public static final int DEFAULT_STATUS = 0;
 	
 	// private var's
 	
+	private float cpuUtilization = 0.0f;
+	private float diskUtilization = 0.0f;
+	private float memoryUtilization = 0.0f;
     
 	// constructors
 	
 	public SystemPerformanceData()
 	{
 		super();
+		super.setName(ConfigConst.SYS_PERF_DATA);
 	}
 	
 	
@@ -39,29 +40,32 @@ public class SystemPerformanceData extends BaseIotData implements Serializable
 	
 	public float getCpuUtilization()
 	{
-		return 0.0f;
+		return this.cpuUtilization;
 	}
 	
 	public float getDiskUtilization()
 	{
-		return 0.0f;
+		return this.diskUtilization;
 	}
 	
 	public float getMemoryUtilization()
 	{
-		return 0.0f;
+		return this.memoryUtilization;
 	}
 	
 	public void setCpuUtilization(float val)
 	{
+		this.cpuUtilization = val;
 	}
 	
 	public void setDiskUtilization(float val)
 	{
+		this.diskUtilization = val;
 	}
 	
 	public void setMemoryUtilization(float val)
 	{
+		this.memoryUtilization = val;
 	}
 	
 	/**
@@ -90,6 +94,12 @@ public class SystemPerformanceData extends BaseIotData implements Serializable
 	 */
 	protected void handleUpdateData(BaseIotData data)
 	{
+		if (data instanceof SystemPerformanceData) {
+			SystemPerformanceData spData = (SystemPerformanceData) data;
+			this.cpuUtilization = spData.getCpuUtilization();
+			this.diskUtilization = spData.getDiskUtilization();
+			this.memoryUtilization = spData.getMemoryUtilization();
+		}
 	}
 	
 }

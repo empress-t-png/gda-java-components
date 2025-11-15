@@ -1,0 +1,44 @@
+#####
+# Gateway Device Application (GDA) Configuration
+#####
+
+# CoAP Server Configuration
+coap.gatewayService.host=localhost
+coap.gatewayService.port=5683
+coap.gatewayService.isSecure=False
+
+# Gateway Device Configuration
+GatewayDevice.enableCoapServer=True
+
+# MQTT Configuration (from previous modules)
+mqtt.gatewayService.host=localhost
+mqtt.gatewayService.port=1883
+mqtt.gatewayService.isSecure=False
+
+# Cloud Configuration
+cloud.gatewayService.host=localhost
+cloud.gatewayService.port=8080
+cloud.gatewayService.isSecure=False
+#####
+# Gateway Device Application (GDA) Configuration
+#####
+
+[GatewayDevice]
+enableCoapServer = True
+enableMqttClient = True
+enableSystemPerf = True
+
+[coap.gatewayService]
+host = localhost
+port = 5683
+isSecure = False
+
+[mqtt.gatewayService]
+host = localhost
+port = 1883
+isSecure = False
+
+[cloud.gatewayService]
+host = localhost
+port = 8080
+isSecure = False

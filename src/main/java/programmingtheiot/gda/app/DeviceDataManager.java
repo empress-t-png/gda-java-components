@@ -36,7 +36,7 @@ import programmingtheiot.gda.connection.SmtpClientConnector;
 import programmingtheiot.gda.system.SystemPerformanceManager;
 
 /**
- * Implementation of DeviceDataManager for Lab Module 05.
+ * Implementation of DeviceDataManager for Lab Module 08.
  *
  */
 public class DeviceDataManager implements IDataMessageListener
@@ -56,7 +56,7 @@ public class DeviceDataManager implements IDataMessageListener
 	private boolean enableSystemPerf = false;
 	
 	private IActuatorDataListener actuatorDataListener = null;
-	private IPubSubClient mqttClient = null;
+	private MqttClientConnector mqttClient = null;
 	private IPubSubClient cloudClient = null;
 	private IPersistenceClient persistenceClient = null;
 	private IRequestResponseClient smtpClient = null;
@@ -190,6 +190,40 @@ public class DeviceDataManager implements IDataMessageListener
 	{
 		_Logger.info("Starting DeviceDataManager...");
 		
+		if (this.mqttClient != null) {
+			if (this.mqttClient.connectClient()) {
+				_Logger.info("Successfully connected MQTT client to broker.");
+				
+				// add necessary subscriptions
+				
+				// TODO: read this from the configuration file
+				int qos = ConfigConst.DEFAULT_QOS;
+				
+				// TODO: check the return value for each and take appropriate action
+				
+				// IMPORTANT NOTE: The 'subscribeToTopic()' method calls shown
+				// below will be moved to MqttClientConnector.connectComplete()
+				// in Lab Module 10. For now, they can remain here.
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
+			} else {
+				_Logger.severe("Failed to connect MQTT client to broker.");
+				
+				// TODO: take appropriate action
+			}
+		}
+		
+		// START CoAP server
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.startServer()) {
+				_Logger.info("CoAP server started.");
+			} else {
+				_Logger.severe("Failed to start CoAP server. Check log file for details.");
+			}
+		}
+		
 		if (this.sysPerfMgr != null) {
 			this.sysPerfMgr.startManager();
 		}
@@ -201,6 +235,39 @@ public class DeviceDataManager implements IDataMessageListener
 		
 		if (this.sysPerfMgr != null) {
 			this.sysPerfMgr.stopManager();
+		}
+		
+		// STOP CoAP server
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.stopServer()) {
+				_Logger.info("CoAP server stopped.");
+			} else {
+				_Logger.severe("Failed to stop CoAP server. Check log file for details.");
+			}
+		}
+		
+		if (this.mqttClient != null) {
+			// add necessary un-subscribes
+			
+			// TODO: check the return value for each and take appropriate action
+			
+			// NOTE: The unsubscribeFromTopic() method calls below should match with
+			// the subscribeToTopic() method calls from startManager(). Also, the
+			// unsubscribe logic below can be moved to MqttClientConnector's
+			// disconnectClient() call PRIOR to actually disconnecting from
+			// the MQTT broker.
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE);
+			
+			if (this.mqttClient.disconnectClient()) {
+				_Logger.info("Successfully disconnected MQTT client from broker.");
+			} else {
+				_Logger.severe("Failed to disconnect MQTT client from broker.");
+				
+				// TODO: take appropriate action
+			}
 		}
 	}
 	
@@ -223,22 +290,16 @@ public class DeviceDataManager implements IDataMessageListener
 			this.sysPerfMgr.setDataMessageListener(this);
 		}
 		
-		// Connection classes will be implemented in later lab modules
 		if (this.enableMqttClient) {
-			// TODO: implement this in Lab Module 7
+			_Logger.info("MQTT client is ENABLED - creating MQTT client connector...");
+			this.mqttClient = new MqttClientConnector();
+			this.mqttClient.setDataMessageListener(this);
 		}
 		
+		// CREATE CoAP server instance
 		if (this.enableCoapServer) {
-			// TODO: implement this in Lab Module 8
-		}
-		
-		if (this.enableCloudClient) {
-			// TODO: implement this in Lab Module 10
-		}
-		
-		if (this.enablePersistenceClient) {
-			// TODO: implement this as an optional exercise in Lab Module 5
+			_Logger.info("CoAP server is ENABLED - initializing CoAP server...");
+			this.coapServer = new CoapServerGateway(this);
 		}
 	}
-	
 }

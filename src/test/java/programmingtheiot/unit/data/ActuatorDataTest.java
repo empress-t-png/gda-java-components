@@ -5,20 +5,14 @@
  * 
  * Copyright (c) 2020 - 2025 by Andrew D. King
  */ 
-
 package programmingtheiot.unit.data;
-
 import static org.junit.Assert.*;
-
 import java.util.logging.Logger;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.data.ActuatorData;
-
 /**
  * This test case class contains very basic unit tests for
  * ActuatorData. It should not be considered complete,
@@ -74,7 +68,7 @@ public class ActuatorDataTest
 		ActuatorData ad = createTestData();
 		
 		assertEquals(ad.getName(), DEFAULT_NAME);
-		assertEquals(ad.getStatusCode(), ActuatorData.DEFAULT_STATUS);
+		assertEquals(ad.getStatusCode(), ConfigConst.DEFAULT_STATUS);
 		assertTrue(ad.getCommand() == DEFAULT_CMD);
 		assertTrue(ad.getValue() == DEFAULT_VAL);
 	}
@@ -84,7 +78,6 @@ public class ActuatorDataTest
 	{
 		ActuatorData ad = new ActuatorData();
 		ActuatorData ad2 = createTestData();
-
 		assertEquals(ad.getName(), ConfigConst.NOT_SET);
 		assertEquals(ad.getStatusCode(), ConfigConst.DEFAULT_STATUS);
 		assertTrue(ad.getCommand() == ConfigConst.DEFAULT_COMMAND);

@@ -80,3 +80,10 @@ enableSystemPerformance = True
 testGdaDataPath         = /tmp/gda-data
 testCdaDataPath         = /tmp/cda-data
 testEmptyApp            = False
+
+# Threshold management for edge integration
+nominalTempFloor        = 18.0
+nominalTempCeiling      = 20.0
+triggerHvacTempFloor    = 18.0
+triggerHvacTempCeiling  = 20.0
+maxThresholdCrossingCount = 5

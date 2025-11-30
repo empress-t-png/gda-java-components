@@ -30,8 +30,9 @@ import programmingtheiot.gda.connection.*;
  * additional functionality within their Programming the IoT
  * environment.
  * 
- * IMPORTANT NOTE: This test expects MqttClientConnector to be
- * configured using the synchronous MqttClient.
+ * IMPORTANT NOTE: This test has been updated to work with
+ * MqttAsyncClient, which requires delays after connect/disconnect
+ * operations to allow async operations to complete.
  * 
  */
 public class MqttClientConnectorTest
@@ -62,14 +63,20 @@ public class MqttClientConnectorTest
 	
 	// test methods
 	
-	
-
-  //@Test	
+	@Test
 	public void testConnectAndDisconnect()
 	{
 		int delay = ConfigUtil.getInstance().getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
 		
 		assertTrue(this.mqttClient.connectClient());
+		
+		// IMPORTANT: Add delay for async client to complete connection
+		try {
+			Thread.sleep(2000);
+		} catch (Exception e) {
+			// ignore
+		}
+		
 		assertFalse(this.mqttClient.connectClient());
 		
 		try {
@@ -79,6 +86,14 @@ public class MqttClientConnectorTest
 		}
 		
 		assertTrue(this.mqttClient.disconnectClient());
+		
+		// IMPORTANT: Add delay for async client to complete disconnection
+		try {
+			Thread.sleep(2000);
+		} catch (Exception e) {
+			// ignore
+		}
+		
 		assertFalse(this.mqttClient.disconnectClient());
 	}
 	
@@ -89,6 +104,15 @@ public class MqttClientConnectorTest
 		int delay = ConfigUtil.getInstance().getInteger(ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
 		
 		assertTrue(this.mqttClient.connectClient());
+		
+		// IMPORTANT: Add delay for async client to complete connection
+		// This allows connectComplete() callback to execute and subscriptions to be made
+		try {
+			Thread.sleep(2000);
+		} catch (Exception e) {
+			// ignore
+		}
+		
 		assertTrue(this.mqttClient.subscribeToTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, qos));
 		assertTrue(this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos));
 		assertTrue(this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos));
@@ -128,6 +152,13 @@ public class MqttClientConnectorTest
 		}
 		
 		assertTrue(this.mqttClient.disconnectClient());
+		
+		// IMPORTANT: Add delay for async client to complete disconnection
+		try {
+			Thread.sleep(2000);
+		} catch (Exception e) {
+			// ignore
+		}
 	}
 	
 }

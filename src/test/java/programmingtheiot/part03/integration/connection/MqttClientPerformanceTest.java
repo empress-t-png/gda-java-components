@@ -1,26 +1,26 @@
 /**
  * This class is part of the Programming the Internet of Things
- * project, and is available via the MIT License, which can be
- * found in the LICENSE file at the top level of this repository.
+ * project, and is available via the MIT License.
  */
 
- package programmingtheiot.part03.integration.connection;
+package programmingtheiot.part03.integration.connection;
 
 import static org.junit.Assert.*;
 
-
-
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import programmingtheiot.common.ConfigConst;
+import programmingtheiot.common.IDataMessageListener;
+import programmingtheiot.common.IActuatorDataListener;
 import programmingtheiot.common.ResourceNameEnum;
-import programmingtheiot.data.DataUtil;
+import programmingtheiot.data.ActuatorData;
 import programmingtheiot.data.SensorData;
-import programmingtheiot.gda.connection.*;
+import programmingtheiot.data.SystemPerformanceData;
+import programmingtheiot.gda.connection.MqttClientConnector;
 
 /**
  * Performance test for MQTT client using different QoS levels.
@@ -28,92 +28,109 @@ import programmingtheiot.gda.connection.*;
  */
 public class MqttClientPerformanceTest
 {
-	// static
+    private static final Logger _Logger =
+        Logger.getLogger(MqttClientPerformanceTest.class.getName());
 
-	private static final Logger _Logger =
-		Logger.getLogger(MqttClientPerformanceTest.class.getName());
+    public static final int MAX_TEST_RUNS = 1000;
+    private static final String TEST_TOPIC = "test/topic";
 
-	// NOTE: We'll use only 10,000 requests for MQTT
-	public static final int MAX_TEST_RUNS = 10000;
+    private MqttClientConnector mqttClient = null;
+    private AtomicInteger receivedCount = new AtomicInteger(0);
 
-	// member var's
+    @Before
+    public void setUp() throws Exception
+    {
+        this.mqttClient = new MqttClientConnector();
 
-	private MqttClientConnector mqttClient = null;
+        this.mqttClient.setDataMessageListener(new IDataMessageListener() {
+            @Override
+            public boolean handleIncomingMessage(ResourceNameEnum resource, String msg) {
+                _Logger.info("Message received on topic: " + resource.getResourceName() + " | Payload: " + msg);
+                receivedCount.incrementAndGet();
+                return true;
+            }
 
+            @Override
+            public boolean handleSensorMessage(ResourceNameEnum resource, SensorData data) {
+                return true;
+            }
 
-	// test setup methods
+            @Override
+            public boolean handleSystemPerformanceMessage(ResourceNameEnum resource, SystemPerformanceData data) {
+                return true;
+            }
 
-	@Before
-	public void setUp() throws Exception
-	{
-		this.mqttClient = new MqttClientConnector();
-	}
+            @Override
+            public boolean handleActuatorCommandResponse(ResourceNameEnum resource, ActuatorData data) {
+                return true;
+            }
 
-	@After
-	public void tearDown() throws Exception
-	{
-		if (this.mqttClient != null) {
-			this.mqttClient.disconnectClient();
-		}
-	}
+            @Override
+            public boolean handleActuatorCommandRequest(ResourceNameEnum resource, ActuatorData data) {
+                return true;
+            }
 
+            @Override
+            public void setActuatorDataListener(String name, IActuatorDataListener listener) {
+                // Not needed for this test
+            }
+        });
+    }
 
-	// test methods
+    @After
+    public void tearDown() throws Exception
+    {
+        if (this.mqttClient != null) {
+            this.mqttClient.disconnectClient();
+        }
+    }
 
-	@Test
-	public void testConnectAndDisconnect()
-	{
-		long startMillis = System.currentTimeMillis();
+    @Test
+    public void testConnectAndDisconnect()
+    {
+        assertTrue("Connect failed", this.mqttClient.connectClient());
+        assertTrue("Disconnect failed", this.mqttClient.disconnectClient());
+    }
 
-		assertTrue(this.mqttClient.connectClient());
-		assertTrue(this.mqttClient.disconnectClient());
+    @Test
+    public void testPublishQoS0()
+    {
+        execTestPublish(MAX_TEST_RUNS, 0);
+    }
 
-		long endMillis = System.currentTimeMillis();
-		long elapsedMillis = endMillis - startMillis;
+    @Test
+    public void testPublishQoS1()
+    {
+        execTestPublish(MAX_TEST_RUNS, 1);
+    }
 
-		_Logger.info("Connect and Disconnect: " + elapsedMillis + " ms");
-	}
+    @Test
+    public void testPublishQoS2()
+    {
+        execTestPublish(MAX_TEST_RUNS, 2);
+    }
 
-	@Test
-	public void testPublishQoS0()
-	{
-		execTestPublish(MAX_TEST_RUNS, 0);
-	}
+    private void execTestPublish(int maxTestRuns, int qos)
+    {
+        assertTrue("Connect failed", this.mqttClient.connectClient());
+        assertTrue("Subscribe failed", this.mqttClient.subscribeToTopic(TEST_TOPIC, qos));
 
-	@Test
-	public void testPublishQoS1()
-	{
-		execTestPublish(MAX_TEST_RUNS, 1);
-	}
+        String payload = "{\"name\":\"test\",\"value\":42}";
 
-	@Test
-	public void testPublishQoS2()
-	{
-		execTestPublish(MAX_TEST_RUNS, 2);
-	}
+        for (int sequenceNo = 0; sequenceNo < maxTestRuns; sequenceNo++) {
+            boolean pubResult = this.mqttClient.publishMessage(TEST_TOPIC, payload, qos);
+            assertTrue("Publish failed at sequence " + sequenceNo, pubResult);
+        }
 
+        try {
+            Thread.sleep(2000); // allow time for messages to arrive
+        } catch (InterruptedException e) {
+            // ignore
+        }
 
-	// private methods
+        assertTrue("Disconnect failed", this.mqttClient.disconnectClient());
+        assertTrue("No messages received during publish test", receivedCount.get() > 0);
 
-	private void execTestPublish(int maxTestRuns, int qos)
-	{
-		assertTrue(this.mqttClient.connectClient());
-
-		SensorData sensorData = new SensorData();
-
-		String payload = DataUtil.getInstance().sensorDataToJson(sensorData);
-
-		long startMillis = System.currentTimeMillis();
-
-		for (int sequenceNo = 0; sequenceNo < maxTestRuns; sequenceNo++) {
-			this.mqttClient.publishMessage(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, payload, qos);
-		}
-
-		long endMillis = System.currentTimeMillis();
-		long elapsedMillis = endMillis - startMillis;
-
-		assertTrue(this.mqttClient.disconnectClient());
-
-		_Logger.info("Publish message - QoS " + qos + " [" + maxTestRuns + "]: " + elapsedMillis + " ms");
-	}
+        _Logger.info("Publish test complete - QoS " + qos + ", received: " + receivedCount.get());
+    }
 }

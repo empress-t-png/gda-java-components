@@ -18,7 +18,6 @@ import programmingtheiot.data.ActuatorData;
 import programmingtheiot.data.DataUtil;
 import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
-import programmingtheiot.gda.connection.IPubSubClient;
 import programmingtheiot.gda.connection.MqttClientConnector;
 
 /**
@@ -37,7 +36,7 @@ public class MqttPublishDataMessageListener implements IDataMessageListener
 	
 	// private var's
 	
-	private IPubSubClient mqttClient = null;
+	private MqttClientConnector mqttClient = null;
 	private boolean pubOnMsg = true;
 	
 	private ResourceNameEnum pubResource = null;

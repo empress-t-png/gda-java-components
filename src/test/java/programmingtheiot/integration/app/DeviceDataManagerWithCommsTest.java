@@ -88,7 +88,7 @@ public class DeviceDataManagerWithCommsTest
 		DeviceDataManager devDataMgr = new DeviceDataManager();
 		devDataMgr.startManager();
 		
-		IPubSubClient mqttClient = new MqttClientConnector();
+		MqttClientConnector mqttClient = new MqttClientConnector();
 		mqttClient.connectClient();
 		
 		SensorData sd = new SensorData();

@@ -95,6 +95,7 @@ public class DeviceDataManager implements IDataMessageListener
             handleIncomingDataAnalysis(resource, data);
             String jsonData = DataUtil.getInstance().sensorDataToJson(data);
             this.mqttClient.publishMessage(resource, jsonData, ConfigConst.DEFAULT_QOS);
+            handleUpstreamTransmission(resource, jsonData, ConfigConst.DEFAULT_QOS);
             return true;
         }
         return false;
@@ -191,6 +192,11 @@ public class DeviceDataManager implements IDataMessageListener
     public void setActuatorDataListener(String name, IActuatorDataListener listener)
     {
         this.actuatorDataListener = listener;
-     }
+    }
+    
+    private void handleUpstreamTransmission(ResourceNameEnum resource, String jsonData, int qos)
+    {
+        // NOTE: This will be implemented in Part 04 (Cloud Integration)
+        _Logger.info("Upstream transmission invoked. Checking cloud integration: " + resource.getResourceName());
+    }
 }
-

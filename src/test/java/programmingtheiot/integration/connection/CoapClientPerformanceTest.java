@@ -97,6 +97,28 @@ public class CoapClientPerformanceTest
 	 * 
 	 */
 	@Test
+	public void testGetRequestCon()
+	{
+		_Logger.info("Testing GET - CON");
+		
+		execTestGet(MAX_TEST_RUNS, true);
+	}
+	
+	/**
+	 * 
+	 */
+	@Test
+	public void testGetRequestNon()
+	{
+		_Logger.info("Testing GET - NON");
+		
+		execTestGet(MAX_TEST_RUNS, false);
+	}
+	
+	/**
+	 * 
+	 */
+	@Test
 	public void testPostRequestCon()
 	{
 		_Logger.info("Testing POST - CON");
@@ -137,7 +159,43 @@ public class CoapClientPerformanceTest
 		execTestPut(MAX_TEST_RUNS, false);
 	}
 	
+	/**
+	 * 
+	 */
+	@Test
+	public void testDeleteRequestCon()
+	{
+		_Logger.info("Testing DELETE - CON");
+		
+		execTestDelete(MAX_TEST_RUNS, true);
+	}
+	
+	/**
+	 * 
+	 */
+	@Test
+	public void testDeleteRequestNon()
+	{
+		_Logger.info("Testing DELETE - NON");
+		
+		execTestDelete(MAX_TEST_RUNS, false);
+	}
+	
 	// private
+	
+	private void execTestGet(int maxTestRuns, boolean enableCON)
+	{
+		long startMillis = System.currentTimeMillis();
+		
+		for (int seqNo = 0; seqNo < maxTestRuns; seqNo++) {
+			this.coapClient.sendGetRequest(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, ConfigConst.TEMP_SENSOR_NAME, enableCON, DEFAULT_TIMEOUT);
+		}
+		
+		long endMillis = System.currentTimeMillis();
+		long elapsedMillis = endMillis - startMillis;
+				
+		_Logger.info("GET message - useCON = " + enableCON + " [" + maxTestRuns + "]: " + elapsedMillis + " ms");
+	}
 	
 	private void execTestPost(int maxTestRuns, boolean enableCON)
 	{
@@ -171,6 +229,20 @@ public class CoapClientPerformanceTest
 		long elapsedMillis = endMillis - startMillis;
 				
 		_Logger.info("PUT message - useCON = " + enableCON + " [" + maxTestRuns + "]: " + elapsedMillis + " ms");
+	}
+	
+	private void execTestDelete(int maxTestRuns, boolean enableCON)
+	{
+		long startMillis = System.currentTimeMillis();
+		
+		for (int seqNo = 0; seqNo < maxTestRuns; seqNo++) {
+			this.coapClient.sendDeleteRequest(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, ConfigConst.TEMP_SENSOR_NAME, enableCON, DEFAULT_TIMEOUT);
+		}
+		
+		long endMillis = System.currentTimeMillis();
+		long elapsedMillis = endMillis - startMillis;
+				
+		_Logger.info("DELETE message - useCON = " + enableCON + " [" + maxTestRuns + "]: " + elapsedMillis + " ms");
 	}
 	
 }

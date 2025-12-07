@@ -1,41 +1,31 @@
-/**
- * This class is part of the Programming the Internet of Things
- * project, and is available via the MIT License, which can be
- * found in the LICENSE file at the top level of this repository.
- * 
- * You may find it more helpful to your design to adjust the
- * functionality, constants and interfaces (if there are any)
- * provided within in order to meet the needs of your specific
- * Programming the Internet of Things project.
- */
 package programmingtheiot.gda.app;
 
+<<<<<<< Updated upstream
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.logging.Level;
+=======
+>>>>>>> Stashed changes
 import java.util.logging.Logger;
 
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
-import programmingtheiot.common.IActuatorDataListener;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 
 import programmingtheiot.data.ActuatorData;
+<<<<<<< Updated upstream
 import programmingtheiot.data.BaseIotData;
 import programmingtheiot.data.DataUtil;
+=======
+>>>>>>> Stashed changes
 import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
+import programmingtheiot.data.DataUtil;
 
-import programmingtheiot.gda.connection.CloudClientConnector;
-import programmingtheiot.gda.connection.CoapServerGateway;
-import programmingtheiot.gda.connection.IPersistenceClient;
-import programmingtheiot.gda.connection.IPubSubClient;
-import programmingtheiot.gda.connection.IRequestResponseClient;
 import programmingtheiot.gda.connection.MqttClientConnector;
-import programmingtheiot.gda.connection.RedisPersistenceAdapter;
-import programmingtheiot.gda.connection.SmtpClientConnector;
 
+<<<<<<< Updated upstream
 import programmingtheiot.gda.system.SystemPerformanceManager;
 
 /**
@@ -466,3 +456,100 @@ public class DeviceDataManager implements IDataMessageListener
 		_Logger.info("TODO: Send JSON data to cloud service: " + resource);
 	}
 }
+=======
+public class DeviceDataManager implements IDataMessageListener
+{
+    private Logger _Logger = Logger.getLogger(DeviceDataManager.class.getName());
+
+    private ConfigUtil configUtil = null;
+    private MqttClientConnector mqttClient = null;
+
+    private float triggerHvacTempFloor = 18.0f;
+    private float triggerHvacTempCeiling = 22.0f;
+
+    public DeviceDataManager()
+    {
+        this.configUtil = ConfigUtil.getInstance();
+        this.mqttClient = new MqttClientConnector();
+        this.mqttClient.setDataMessageListener(this);
+
+        this.triggerHvacTempFloor = this.configUtil.getFloat(ConfigConst.GATEWAY_DEVICE, ConfigConst.TRIGGER_HVAC_TEMP_FLOOR_KEY, 18.0f);
+        this.triggerHvacTempCeiling = this.configUtil.getFloat(ConfigConst.GATEWAY_DEVICE, ConfigConst.TRIGGER_HVAC_TEMP_CEILING_KEY, 22.0f);
+    }
+
+    public void startManager()
+    {
+        if (this.mqttClient.connectClient()) {
+            _Logger.info("MQTT client connected.");
+        } else {
+            _Logger.severe("MQTT client failed to connect.");
+        }
+    }
+
+    public void stopManager()
+    {
+        if (this.mqttClient.disconnectClient()) {
+            _Logger.info("MQTT client disconnected.");
+        } else {
+            _Logger.warning("MQTT client failed to disconnect.");
+        }
+    }
+
+    @Override
+    public void handleIncomingMessage(ResourceNameEnum resource, String msg)
+    {
+        _Logger.info("Received message on resource: " + resource);
+
+        if (resource == ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE) {
+            SensorData sensorData = DataUtil.getInstance().jsonToSensorData(msg);
+            handleSensorData(sensorData);
+        } else if (resource == ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE) {
+            SystemPerformanceData sysPerfData = DataUtil.getInstance().jsonToSystemPerformanceData(msg);
+            _Logger.info("SystemPerformanceData received: CPU=" + sysPerfData.getCpuUtilization() + " Mem=" + sysPerfData.getMemoryUtilization());
+        }
+    }
+
+    private void handleSensorData(SensorData data)
+    {
+        if (data.getTypeID() == ConfigConst.TEMP_SENSOR_TYPE) {
+            float temp = data.getValue();
+            ActuatorData ad = new ActuatorData();
+            ad.setTypeID(ConfigConst.HVAC_ACTUATOR_TYPE);
+            ad.setAsResponse();
+
+            if (temp < this.triggerHvacTempFloor) {
+                ad.setCommand(ConfigConst.COMMAND_ON);
+                ad.setStateData("Heating ON");
+                ad.setValue(this.triggerHvacTempFloor);
+                _Logger.info("Temperature below floor. Sending Heating ON command.");
+            } else if (temp > this.triggerHvacTempCeiling) {
+                ad.setCommand(ConfigConst.COMMAND_ON);
+                ad.setStateData("Cooling ON");
+                ad.setValue(this.triggerHvacTempCeiling);
+                _Logger.info("Temperature above ceiling. Sending Cooling ON command.");
+            } else {
+                ad.setCommand(ConfigConst.COMMAND_OFF);
+                ad.setStateData("HVAC OFF");
+                ad.setValue(0.0f);
+                _Logger.info("Temperature normal. Sending HVAC OFF command.");
+            }
+
+            String adJson = DataUtil.getInstance().actuatorDataToJson(ad);
+            this.mqttClient.publishMessage(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, adJson, ConfigConst.DEFAULT_QOS);
+        }
+    }
+
+    @Override
+    public void handleActuatorCommandMessage(ActuatorData data)
+    {
+        _Logger.info("Actuator command received: " + data.getStateData());
+    }
+
+    @Override
+    public boolean handleActuatorCommandResponse(ResourceNameEnum resource, ActuatorData data)
+    {
+        _Logger.info("Actuator response received: " + data.getStateData());
+        return true;
+    }
+}
+>>>>>>> Stashed changes

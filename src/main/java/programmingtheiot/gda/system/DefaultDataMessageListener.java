@@ -2,7 +2,6 @@ package programmingtheiot.gda.system;
 
 import java.util.logging.Logger;
 
-import programmingtheiot.common.IActuatorDataListener;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 import programmingtheiot.data.ActuatorData;
@@ -11,74 +10,38 @@ import programmingtheiot.data.SystemPerformanceData;
 
 /**
  * Default implementation of IDataMessageListener.
- * Simply logs incoming messages but takes no action.
- * Used for testing and as a placeholder listener.
+ * This is a simple stub that logs received messages.
  */
-public class DefaultDataMessageListener implements IDataMessageListener {
-
-    // static
+public class DefaultDataMessageListener implements IDataMessageListener
+{
     private static final Logger _Logger =
         Logger.getLogger(DefaultDataMessageListener.class.getName());
-
-    // constructors
     
-    /**
-     * Default constructor.
-     */
-    public DefaultDataMessageListener() {
-        super();
-    }
-
-    // public methods
-
     @Override
-    public boolean handleActuatorCommandResponse(ResourceNameEnum resourceName, ActuatorData data) {
-        if (data != null) {
-            _Logger.info("Handling actuator command response for resource: " + 
-                resourceName.getResourceName() + " - " + data.getName());
-        }
+    public boolean handleSensorMessage(ResourceNameEnum resourceName, SensorData data)
+    {
+        _Logger.info("Handling SensorData message: " + data);
         return true;
     }
-
+    
     @Override
-    public boolean handleActuatorCommandRequest(ResourceNameEnum resourceName, ActuatorData data) {
-        if (data != null) {
-            _Logger.info("Handling actuator command request for resource: " + 
-                resourceName.getResourceName() + " - " + data.getName());
-        }
+    public boolean handleSystemPerformanceMessage(ResourceNameEnum resourceName, SystemPerformanceData data)
+    {
+        _Logger.info("Handling SystemPerformanceData message: " + data);
         return true;
     }
-
+    
     @Override
-    public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg) {
-        if (msg != null) {
-            _Logger.info("Handling incoming message for resource: " + 
-                resourceName.getResourceName());
-        }
+    public boolean handleActuatorCommandResponse(ResourceNameEnum resourceName, ActuatorData data)
+    {
+        _Logger.info("Handling ActuatorData response: " + data);
         return true;
     }
-
+    
     @Override
-    public boolean handleSensorMessage(ResourceNameEnum resourceName, SensorData data) {
-        if (data != null) {
-            _Logger.info("Handling sensor message for resource: " + 
-                resourceName.getResourceName() + " - " + data.getName());
-        }
+    public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg)
+    {
+        _Logger.info("Handling incoming message from resource: " + resourceName + " | Message: " + msg);
         return true;
-    }
-
-    @Override
-    public boolean handleSystemPerformanceMessage(ResourceNameEnum resourceName, SystemPerformanceData data) {
-        if (data != null) {
-            _Logger.info("Handling system performance message for resource: " + 
-                resourceName.getResourceName());
-        }
-        return true;
-    }
-
-    @Override
-    public void setActuatorDataListener(String name, IActuatorDataListener listener) {
-        // No action needed for default implementation
-        _Logger.info("Actuator data listener set for: " + name);
     }
 }

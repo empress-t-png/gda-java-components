@@ -1,248 +1,112 @@
 package programmingtheiot.gda.app;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
-import programmingtheiot.common.IActuatorDataListener;
 
-import programmingtheiot.common.ConfigConst;
-import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
-
 import programmingtheiot.data.ActuatorData;
-import programmingtheiot.data.BaseIotData;
-import programmingtheiot.data.SensorData;
-import programmingtheiot.data.SystemPerformanceData;
 import programmingtheiot.data.DataUtil;
-
-import programmingtheiot.gda.connection.CloudClientConnector;
-import programmingtheiot.gda.connection.ICloudClient;
 import programmingtheiot.gda.connection.MqttClientConnector;
-import programmingtheiot.gda.system.SystemPerformanceManager;
+import programmingtheiot.gda.system.DefaultDataMessageListener;
 
-public class DeviceDataManager implements IDataMessageListener
+/**
+ * DeviceDataManager is responsible for managing IoT data flow
+ * within the Gateway Device App. It delegates message handling
+ * to an IDataMessageListener implementation.
+ */
+public class DeviceDataManager
 {
-    private static final Logger _Logger = Logger.getLogger(DeviceDataManager.class.getName());
-
-    private boolean enableMqttClient = true;
-    private boolean enableCloudClient = false;
-    private boolean enableSystemPerf = false;
-
-    private MqttClientConnector mqttClient = null;
-    private ICloudClient cloudClient = null;
-    private SystemPerformanceManager sysPerfMgr = null;
-    private IActuatorDataListener actuatorDataListener = null;
-
-    private ActuatorData latestHumidifierActuatorData = null;
-    private SensorData latestHumiditySensorData = null;
-    private OffsetDateTime latestHumiditySensorTimeStamp = null;
-
-    private int lastKnownHumidifierCommand = ConfigConst.OFF_COMMAND;
-    private long humidityMaxTimePastThreshold = 300;
-    private float nominalHumiditySetting = 40.0f;
-    private float triggerHumidifierFloor = 30.0f;
-    private float triggerHumidifierCeiling = 50.0f;
-
+    private static final Logger _Logger =
+        Logger.getLogger(DeviceDataManager.class.getName());
+    
+    private IDataMessageListener dataMsgListener;
+    private MqttClientConnector mqttClient;
+    
+    /**
+     * Default constructor.
+     */
     public DeviceDataManager()
     {
-        ConfigUtil configUtil = ConfigUtil.getInstance();
-
-        this.enableMqttClient = configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_MQTT_CLIENT_KEY);
-        this.enableCloudClient = configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_CLOUD_CLIENT_KEY);
-        this.enableSystemPerf = configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_SYSTEM_PERF_KEY);
-
-        this.humidityMaxTimePastThreshold = configUtil.getInteger(ConfigConst.GATEWAY_DEVICE, "humidityMaxTimePastThreshold", 300);
-        this.nominalHumiditySetting = configUtil.getFloat(ConfigConst.GATEWAY_DEVICE, "nominalHumiditySetting", 40.0f);
-        this.triggerHumidifierFloor = configUtil.getFloat(ConfigConst.GATEWAY_DEVICE, "triggerHumidifierFloor", 30.0f);
-        this.triggerHumidifierCeiling = configUtil.getFloat(ConfigConst.GATEWAY_DEVICE, "triggerHumidifierCeiling", 50.0f);
-
-        initConnections();
+        // Use the default listener implementation
+        this.dataMsgListener = new DefaultDataMessageListener();
+        this.mqttClient = new MqttClientConnector();
+        _Logger.info("DeviceDataManager initialized with DefaultDataMessageListener.");
     }
-
-    private void initConnections()
+    
+    public void setDataMessageListener(IDataMessageListener listener)
     {
-        if (this.enableSystemPerf) {
-            this.sysPerfMgr = new SystemPerformanceManager();
-            this.sysPerfMgr.setDataMessageListener(this);
-        }
-        if (this.enableMqttClient) {
-            this.mqttClient = new MqttClientConnector();
-            this.mqttClient.setDataMessageListener(this);
-        }
-        if (this.enableCloudClient) {
-            this.cloudClient = new CloudClientConnector();
-            this.cloudClient.setDataMessageListener(this);
+        if (listener != null) {
+            this.dataMsgListener = listener;
+            _Logger.info("Custom IDataMessageListener set.");
         }
     }
-
+    
+    public IDataMessageListener getDataMessageListener()
+    {
+        return this.dataMsgListener;
+    }
+    
+    /**
+     * Start the DeviceDataManager.
+     */
     public void startManager()
     {
+        _Logger.info("DeviceDataManager started.");
+        
         if (this.mqttClient != null) {
             this.mqttClient.connectClient();
-        }
-        if (this.cloudClient != null) {
-            this.cloudClient.connectClient();
-        }
-        if (this.sysPerfMgr != null) {
-            this.sysPerfMgr.startManager();
+            _Logger.info("MQTT client connected.");
         }
     }
-
+    
+    /**
+     * Stop the DeviceDataManager.
+     */
     public void stopManager()
     {
-        if (this.sysPerfMgr != null) {
-            this.sysPerfMgr.stopManager();
-        }
-        if (this.cloudClient != null) {
-            this.cloudClient.disconnectClient();
-        }
+        _Logger.info("DeviceDataManager stopped.");
+        
         if (this.mqttClient != null) {
             this.mqttClient.disconnectClient();
+            _Logger.info("MQTT client disconnected.");
         }
     }
-
-    @Override
-    public boolean handleSensorMessage(ResourceNameEnum resource, SensorData data)
+    
+    /**
+     * Handle incoming messages from cloud or other sources.
+     * 
+     * @param resourceName The resource type
+     * @param msg The message payload (JSON)
+     * @return true if handled successfully, false otherwise
+     */
+    public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg)
     {
-        if (data != null) {
-            _Logger.info("Received SensorData: " + data.getName());
-            handleIncomingDataAnalysis(resource, data);
-            String jsonData = DataUtil.getInstance().sensorDataToJson(data);
-            this.mqttClient.publishMessage(resource, jsonData, ConfigConst.DEFAULT_QOS);
-            handleUpstreamTransmission(resource, data);
-            return true;
-        }
-        return false;
-    }
-
-    private void handleIncomingDataAnalysis(ResourceNameEnum resource, SensorData data)
-    {
-        if (data.getTypeID() == ConfigConst.HUMIDITY_SENSOR_TYPE) {
-            handleHumiditySensorAnalysis(resource, data);
-        }
-    }
-
-    private void handleHumiditySensorAnalysis(ResourceNameEnum resource, SensorData data)
-    {
-        boolean isLow = data.getValue() < this.triggerHumidifierFloor;
-        boolean isHigh = data.getValue() > this.triggerHumidifierCeiling;
-
-        if (isLow || isHigh) {
-            if (this.latestHumiditySensorData == null) {
-                this.latestHumiditySensorData = data;
-                this.latestHumiditySensorTimeStamp = getDateTimeFromData(data);
-                return;
-            } else {
-                OffsetDateTime curTime = getDateTimeFromData(data);
-                long delta = ChronoUnit.SECONDS.between(this.latestHumiditySensorTimeStamp, curTime);
-
-                if (delta >= this.humidityMaxTimePastThreshold) {
-                    ActuatorData ad = new ActuatorData();
-                    ad.setName(ConfigConst.HUMIDIFIER_ACTUATOR_NAME);
-                    ad.setLocationID(data.getLocationID());
-                    ad.setTypeID(ConfigConst.HUMIDIFIER_ACTUATOR_TYPE);
-                    ad.setValue(this.nominalHumiditySetting);
-                    ad.setCommand(isLow ? ConfigConst.ON_COMMAND : ConfigConst.OFF_COMMAND);
-
-                    this.lastKnownHumidifierCommand = ad.getCommand();
-                    sendActuatorCommandToCda(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, ad);
-
-                    this.latestHumidifierActuatorData = ad;
-                    this.latestHumiditySensorData = null;
-                    this.latestHumiditySensorTimeStamp = null;
+        if (resourceName != null && msg != null) {
+            try {
+                if (resourceName == ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE) {
+                    _Logger.info("Handling incoming ActuatorData message: " + msg);
+                    
+                    // Validate by converting to ActuatorData and back to JSON
+                    ActuatorData ad = DataUtil.getInstance().jsonToActuatorData(msg);
+                    String jsonData = DataUtil.getInstance().actuatorDataToJson(ad);
+                    
+                    if (this.mqttClient != null) {
+                        _Logger.fine("Publishing data to MQTT broker: " + jsonData);
+                        return this.mqttClient.publishMessage(
+                            resourceName.getResourceName(), jsonData, 0);
+                    }
+                } else {
+                    _Logger.warning("Failed to parse incoming message. Unknown type: " + msg);
+                    return false;
                 }
+            } catch (Exception e) {
+                _Logger.log(Level.WARNING, "Failed to process incoming message for resource: " + resourceName, e);
             }
+        } else {
+            _Logger.warning("Incoming message has no data. Ignoring for resource: " + resourceName);
         }
-    }
-
-    private void sendActuatorCommandToCda(ResourceNameEnum resource, ActuatorData data)
-    {
-        if (this.actuatorDataListener != null) {
-            this.actuatorDataListener.onActuatorDataUpdate(data);
-        }
-        String jsonData = DataUtil.getInstance().actuatorDataToJson(data);
-        this.mqttClient.publishMessage(resource, jsonData, ConfigConst.DEFAULT_QOS);
-    }
-
-    private OffsetDateTime getDateTimeFromData(BaseIotData data)
-    {
-        try {
-            return OffsetDateTime.parse(data.getTimeStamp());
-        } catch (Exception e) {
-            _Logger.warning("Failed to parse timestamp. Using current time.");
-            return OffsetDateTime.now();
-        }
-    }
-
-    @Override
-    public boolean handleSystemPerformanceMessage(ResourceNameEnum resource, SystemPerformanceData data)
-    {
-        if (data != null) {
-            _Logger.info("Received SystemPerformanceData: CPU=" + data.getCpuUtilization() + 
-                       "%, Memory=" + data.getMemoryUtilization() + "%");
-            handleUpstreamTransmission(resource, data);
-            return true;
-        }
+        
         return false;
-    }
-
-    @Override
-    public boolean handleActuatorCommandResponse(ResourceNameEnum resource, ActuatorData data)
-    {
-        _Logger.info("Received ActuatorData response: " + data.getName());
-        return true;
-    }
-
-    @Override
-    public boolean handleActuatorCommandRequest(ResourceNameEnum resource, ActuatorData data)
-    {
-        _Logger.info("Received ActuatorData command: " + data.getName());
-        return true;
-    }
-
-    @Override
-    public boolean handleIncomingMessage(ResourceNameEnum resource, String msg)
-    {
-        _Logger.info("Received generic message: " + msg);
-        return true;
-    }
-
-    @Override
-    public void setActuatorDataListener(String name, IActuatorDataListener listener)
-    {
-        this.actuatorDataListener = listener;
-    }
-    
-    /**
-     * Handles upstream transmission of sensor data to the cloud service.
-     * 
-     * @param resource The resource enum
-     * @param data The sensor data to transmit
-     */
-    private void handleUpstreamTransmission(ResourceNameEnum resource, SensorData data)
-    {
-        if (this.cloudClient != null && this.enableCloudClient) {
-            _Logger.info("Sending SensorData to cloud: " + resource.getResourceName());
-            this.cloudClient.sendEdgeDataToCloud(resource, data);
-        } else {
-            _Logger.fine("Cloud client not enabled or not initialized.");
-        }
-    }
-    
-    /**
-     * Handles upstream transmission of system performance data to the cloud service.
-     * 
-     * @param resource The resource enum
-     * @param data The system performance data to transmit
-     */
-    private void handleUpstreamTransmission(ResourceNameEnum resource, SystemPerformanceData data)
-    {
-        if (this.cloudClient != null && this.enableCloudClient) {
-            _Logger.info("Sending SystemPerformanceData to cloud: " + resource.getResourceName());
-            this.cloudClient.sendEdgeDataToCloud(resource, data);
-        } else {
-            _Logger.fine("Cloud client not enabled or not initialized.");
-        }
     }
 }

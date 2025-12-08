@@ -2,3 +2,5 @@
 /target/
 **/cert
 **/cred
+cred/UbidotsCloudCred.props
+cert/UbidotsCloudCert.pem

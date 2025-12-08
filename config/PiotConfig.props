@@ -11,18 +11,16 @@
 # Cloud client configuration information
 #
 [Cloud.GatewayService]
-credFile       = ./cred/PiotCloudCred.props
-certFile       = ./cert/PiotCloudCert.pem
-host           = localhost
+credFile     = /home/tosin/piot/gda-java-components/cred/UbidotsCloudCred.props
+certFile      = /home/tosin/piot/gda-java-components/cert/UbidotsCloudCert.pem
+host         =  industrial.api.ubidots.com
 port           = 1883
 securePort     = 8883
-defaultQoS     = 0
-keepAlive      = 60
-useAsyncClient = True
-enableAuth     = True
+defaultQos    = 0
+keepAlive      = 30
 enableCrypt    = True
-baseUrl        =
-baseTopic      =
+cloudTopicPrefix = /v1.6/devices/ 
+
 
 #
 # SMTP client configuration information
@@ -73,7 +71,7 @@ pollCycleSecs           = 60
 enableMqttClient        = True
 enableCoapServer        = True
 enableCoapClient        = True
-enableCloudClient       = False
+enableCloudClient       = True
 enableSmtpClient        = False
 enablePersistenceClient = False
 enableSystemPerformance = True

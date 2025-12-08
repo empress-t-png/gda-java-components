@@ -234,6 +234,7 @@ public class ConfigConst
 	public static final String BASE_URL_KEY         = "baseUrl";
 	public static final String BASE_TOPIC_KEY       = "baseTopic";
 	public static final String CLIENT_ENDPOINT_KEY  = "clientEndpoint";
+	public static final String CLOUD_TOPIC_PREFIX_KEY = "cloudTopicPrefix";
 
 	public static final String PROTOCOL_KEY         = "protocol";
 	public static final String HOST_KEY             = "host";

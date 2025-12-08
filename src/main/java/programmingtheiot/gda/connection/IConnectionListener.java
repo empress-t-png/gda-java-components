@@ -5,9 +5,7 @@
  * 
  * Copyright (c) 2020 - 2025 by Andrew D. King
  */
-
 package programmingtheiot.gda.connection;
-
 
 /**
  * Interface contract for handling generic connection state updates.
@@ -18,11 +16,12 @@ public interface IConnectionListener
 	/**
 	 * Callback to be invoked after successful connection.
 	 * 
+	 * @param isReconnect True if this is a reconnection, false for initial connection
 	 */
-	public void onConnect();
+	public void onConnect(boolean isReconnect);
 	
 	/**
-	 * Callback to be invoked after successful disconnect.0
+	 * Callback to be invoked after successful disconnect.
 	 * 
 	 */
 	public void onDisconnect();

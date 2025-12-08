@@ -45,13 +45,28 @@ public class MqttClientConnector implements MqttCallbackExtended
     private MqttConnectOptions connOpts = null;
     private MemoryPersistence persistence = null;
     private IDataMessageListener dataMsgListener = null;
+    private IConnectionListener connListener = null;
 
     // constructors
     
+    /**
+     * Default constructor. Uses default MQTT gateway service configuration.
+     */
     public MqttClientConnector()
     {
         super();
         initClientParameters(ConfigConst.MQTT_GATEWAY_SERVICE);
+    }
+    
+    /**
+     * Constructor with custom configuration section name.
+     * 
+     * @param configSectionName The configuration section name to use
+     */
+    public MqttClientConnector(String configSectionName)
+    {
+        super();
+        initClientParameters(configSectionName);
     }
 
     // public methods
@@ -91,15 +106,12 @@ public class MqttClientConnector implements MqttCallbackExtended
 
     public boolean publishMessage(String topic, String payload, int qos)
     {
-        try {
-            MqttMessage message = new MqttMessage(payload.getBytes());
-            message.setQos(qos);
-            this.mqttClient.publish(topic, message);
-            return true;
-        } catch (Exception e) {
-            _Logger.log(Level.SEVERE, "Publish failed to topic: " + topic, e);
+        if (this.mqttClient != null && this.mqttClient.isConnected()) {
+            return publishMessageToClient(topic, payload, qos);
+        } else {
+            _Logger.warning("MQTT client not connected. Unable to publish message to topic: " + topic);
+            return false;
         }
-        return false;
     }
 
     public boolean subscribeToTopic(ResourceNameEnum topic, int qos)
@@ -109,14 +121,12 @@ public class MqttClientConnector implements MqttCallbackExtended
 
     public boolean subscribeToTopic(String topic, int qos)
     {
-        try {
-            this.mqttClient.subscribe(topic, qos);
-            _Logger.info("Subscribed to topic: " + topic);
-            return true;
-        } catch (Exception e) {
-            _Logger.log(Level.SEVERE, "Subscribe failed to topic: " + topic, e);
+        if (this.mqttClient != null && this.mqttClient.isConnected()) {
+            return subscribeToTopicOnClient(topic, qos);
+        } else {
+            _Logger.warning("MQTT client not connected. Unable to subscribe to topic: " + topic);
+            return false;
         }
-        return false;
     }
 
     public boolean unsubscribeFromTopic(ResourceNameEnum topic)
@@ -126,19 +136,27 @@ public class MqttClientConnector implements MqttCallbackExtended
 
     public boolean unsubscribeFromTopic(String topic)
     {
-        try {
-            this.mqttClient.unsubscribe(topic);
-            _Logger.info("Unsubscribed from topic: " + topic);
-            return true;
-        } catch (Exception e) {
-            _Logger.log(Level.SEVERE, "Unsubscribe failed from topic: " + topic, e);
+        if (this.mqttClient != null && this.mqttClient.isConnected()) {
+            return unsubscribeFromTopicOnClient(topic);
+        } else {
+            _Logger.warning("MQTT client not connected. Unable to unsubscribe from topic: " + topic);
+            return false;
         }
-        return false;
     }
 
     public void setDataMessageListener(IDataMessageListener listener)
     {
         this.dataMsgListener = listener;
+    }
+    
+    /**
+     * Sets the connection listener for connection event callbacks.
+     * 
+     * @param listener The IConnectionListener instance
+     */
+    public void setConnectionListener(IConnectionListener listener)
+    {
+        this.connListener = listener;
     }
 
     // callbacks
@@ -147,6 +165,11 @@ public class MqttClientConnector implements MqttCallbackExtended
     public void connectComplete(boolean reconnect, String serverURI)
     {
         _Logger.info("Connected to broker: " + serverURI + " (reconnect = " + reconnect + ")");
+        
+        // Notify connection listener
+        if (this.connListener != null) {
+            this.connListener.onConnect(reconnect);
+        }
         
         // Subscribe to CDA topics using custom message listeners
         int qos = ConfigConst.DEFAULT_QOS;
@@ -182,6 +205,11 @@ public class MqttClientConnector implements MqttCallbackExtended
     public void connectionLost(Throwable cause)
     {
         _Logger.warning("Connection lost: " + cause.getMessage());
+        
+        // Notify connection listener
+        if (this.connListener != null) {
+            this.connListener.onDisconnect();
+        }
     }
 
     @Override
@@ -203,6 +231,66 @@ public class MqttClientConnector implements MqttCallbackExtended
                 this.dataMsgListener.handleIncomingMessage(resource, payload);
             }
         }
+    }
+    
+    // protected methods
+    
+    /**
+     * Protected method to publish a message to the MQTT client.
+     * 
+     * @param topic The topic to publish to
+     * @param payload The message payload
+     * @param qos The QoS level
+     * @return True if successful, false otherwise
+     */
+    protected boolean publishMessageToClient(String topic, String payload, int qos)
+    {
+        try {
+            MqttMessage message = new MqttMessage(payload.getBytes());
+            message.setQos(qos);
+            this.mqttClient.publish(topic, message);
+            return true;
+        } catch (Exception e) {
+            _Logger.log(Level.SEVERE, "Publish failed to topic: " + topic, e);
+        }
+        return false;
+    }
+    
+    /**
+     * Protected method to subscribe to a topic on the MQTT client.
+     * 
+     * @param topic The topic to subscribe to
+     * @param qos The QoS level
+     * @return True if successful, false otherwise
+     */
+    protected boolean subscribeToTopicOnClient(String topic, int qos)
+    {
+        try {
+            this.mqttClient.subscribe(topic, qos);
+            _Logger.info("Subscribed to topic: " + topic);
+            return true;
+        } catch (Exception e) {
+            _Logger.log(Level.SEVERE, "Subscribe failed to topic: " + topic, e);
+        }
+        return false;
+    }
+    
+    /**
+     * Protected method to unsubscribe from a topic on the MQTT client.
+     * 
+     * @param topic The topic to unsubscribe from
+     * @return True if successful, false otherwise
+     */
+    protected boolean unsubscribeFromTopicOnClient(String topic)
+    {
+        try {
+            this.mqttClient.unsubscribe(topic);
+            _Logger.info("Unsubscribed from topic: " + topic);
+            return true;
+        } catch (Exception e) {
+            _Logger.log(Level.SEVERE, "Unsubscribe failed from topic: " + topic, e);
+        }
+        return false;
     }
     
     // private methods

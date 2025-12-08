@@ -16,6 +16,8 @@ import programmingtheiot.data.SensorData;
 import programmingtheiot.data.SystemPerformanceData;
 import programmingtheiot.data.DataUtil;
 
+import programmingtheiot.gda.connection.CloudClientConnector;
+import programmingtheiot.gda.connection.ICloudClient;
 import programmingtheiot.gda.connection.MqttClientConnector;
 import programmingtheiot.gda.system.SystemPerformanceManager;
 
@@ -24,9 +26,11 @@ public class DeviceDataManager implements IDataMessageListener
     private static final Logger _Logger = Logger.getLogger(DeviceDataManager.class.getName());
 
     private boolean enableMqttClient = true;
+    private boolean enableCloudClient = false;
     private boolean enableSystemPerf = false;
 
     private MqttClientConnector mqttClient = null;
+    private ICloudClient cloudClient = null;
     private SystemPerformanceManager sysPerfMgr = null;
     private IActuatorDataListener actuatorDataListener = null;
 
@@ -45,6 +49,7 @@ public class DeviceDataManager implements IDataMessageListener
         ConfigUtil configUtil = ConfigUtil.getInstance();
 
         this.enableMqttClient = configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_MQTT_CLIENT_KEY);
+        this.enableCloudClient = configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_CLOUD_CLIENT_KEY);
         this.enableSystemPerf = configUtil.getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.ENABLE_SYSTEM_PERF_KEY);
 
         this.humidityMaxTimePastThreshold = configUtil.getInteger(ConfigConst.GATEWAY_DEVICE, "humidityMaxTimePastThreshold", 300);
@@ -65,12 +70,19 @@ public class DeviceDataManager implements IDataMessageListener
             this.mqttClient = new MqttClientConnector();
             this.mqttClient.setDataMessageListener(this);
         }
+        if (this.enableCloudClient) {
+            this.cloudClient = new CloudClientConnector();
+            this.cloudClient.setDataMessageListener(this);
+        }
     }
 
     public void startManager()
     {
         if (this.mqttClient != null) {
             this.mqttClient.connectClient();
+        }
+        if (this.cloudClient != null) {
+            this.cloudClient.connectClient();
         }
         if (this.sysPerfMgr != null) {
             this.sysPerfMgr.startManager();
@@ -81,6 +93,9 @@ public class DeviceDataManager implements IDataMessageListener
     {
         if (this.sysPerfMgr != null) {
             this.sysPerfMgr.stopManager();
+        }
+        if (this.cloudClient != null) {
+            this.cloudClient.disconnectClient();
         }
         if (this.mqttClient != null) {
             this.mqttClient.disconnectClient();
@@ -95,7 +110,7 @@ public class DeviceDataManager implements IDataMessageListener
             handleIncomingDataAnalysis(resource, data);
             String jsonData = DataUtil.getInstance().sensorDataToJson(data);
             this.mqttClient.publishMessage(resource, jsonData, ConfigConst.DEFAULT_QOS);
-            handleUpstreamTransmission(resource, jsonData, ConfigConst.DEFAULT_QOS);
+            handleUpstreamTransmission(resource, data);
             return true;
         }
         return false;
@@ -163,8 +178,13 @@ public class DeviceDataManager implements IDataMessageListener
     @Override
     public boolean handleSystemPerformanceMessage(ResourceNameEnum resource, SystemPerformanceData data)
     {
-        _Logger.info("Received SystemPerformanceData: " + data.getName());
-        return true;
+        if (data != null) {
+            _Logger.info("Received SystemPerformanceData: CPU=" + data.getCpuUtilization() + 
+                       "%, Memory=" + data.getMemoryUtilization() + "%");
+            handleUpstreamTransmission(resource, data);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -194,9 +214,35 @@ public class DeviceDataManager implements IDataMessageListener
         this.actuatorDataListener = listener;
     }
     
-    private void handleUpstreamTransmission(ResourceNameEnum resource, String jsonData, int qos)
+    /**
+     * Handles upstream transmission of sensor data to the cloud service.
+     * 
+     * @param resource The resource enum
+     * @param data The sensor data to transmit
+     */
+    private void handleUpstreamTransmission(ResourceNameEnum resource, SensorData data)
     {
-        // NOTE: This will be implemented in Part 04 (Cloud Integration)
-        _Logger.info("Upstream transmission invoked. Checking cloud integration: " + resource.getResourceName());
+        if (this.cloudClient != null && this.enableCloudClient) {
+            _Logger.info("Sending SensorData to cloud: " + resource.getResourceName());
+            this.cloudClient.sendEdgeDataToCloud(resource, data);
+        } else {
+            _Logger.fine("Cloud client not enabled or not initialized.");
+        }
+    }
+    
+    /**
+     * Handles upstream transmission of system performance data to the cloud service.
+     * 
+     * @param resource The resource enum
+     * @param data The system performance data to transmit
+     */
+    private void handleUpstreamTransmission(ResourceNameEnum resource, SystemPerformanceData data)
+    {
+        if (this.cloudClient != null && this.enableCloudClient) {
+            _Logger.info("Sending SystemPerformanceData to cloud: " + resource.getResourceName());
+            this.cloudClient.sendEdgeDataToCloud(resource, data);
+        } else {
+            _Logger.fine("Cloud client not enabled or not initialized.");
+        }
     }
 }

@@ -16,7 +16,7 @@ The implementation features a multi-layered architecture where `CloudClientConne
 ## Code Repository and Branch
 - **Repository:** https://github.com/empress-t-png/gda-java-components  
 - **Branch:** `labmodule12`
-
+   ## System Architecture Diagram
 ## Unit Tests Executed
 - `CloudClientConnectorTest`
 - `MqttClientConnectorTest`
@@ -47,8 +47,4 @@ Token Mismatch: BBUS- prefix suggests Business plan token, potentially incompati
 ## Conclusion
 All functional and integration requirements for cloud-triggered actuation have been implemented and tested successfully, with the exception of cloud connectivity due to token compatibility.
 
----
-*Submitted for Lab Module 12 – Connected Devices*  
-*Branch: labmodule12*  
-*Last Updated: $(date)*
 

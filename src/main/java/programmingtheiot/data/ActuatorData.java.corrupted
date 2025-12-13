@@ -41,38 +41,6 @@ public class ActuatorData extends BaseIotData
         return this.stateData;
     }
 
-    /**
-     * Set response data (for backward compatibility).
-     * @param data The response data
-     */
-    public void setResponseData(String data)
-    {
-        this.stateData = data;
-    }
-
-    /**
-     * Get response data (for backward compatibility).
-     * @return The response data
-     */
-    public String getResponseData()
-    {
-        return this.stateData;
-    }
-
-    /**
-     * Update this ActuatorData with values from another ActuatorData.
-     * 
-     * @param actuatorData The source ActuatorData
-     */
-    public void updateData(ActuatorData actuatorData)
-    {
-        if (actuatorData != null) {
-            this.setCommand(actuatorData.getCommand());
-            this.setValue(actuatorData.getValue());
-            this.setStateData(actuatorData.getStateData());
-        }
-    }
-
     @Override
     public void handleUpdateData(BaseIotData data)
     {
@@ -92,4 +60,33 @@ public class ActuatorData extends BaseIotData
                ", value=" + value + ", isResponse=" + isResponse +
                ", stateData=" + stateData + "]";
     }
+    /**
+     * Update this ActuatorData with values from another ActuatorData.
+     * 
+     * @param actuatorData The source ActuatorData
+     */
+    public void updateData(ActuatorData actuatorData)
+    {
+        if (actuatorData != null) {
+            this.setCommand(actuatorData.getCommand());
+            this.setValue(actuatorData.getValue());
+            this.setStateData(actuatorData.getStateData());
+            this.setResponseData(actuatorData.getResponseData());
+        }
+    }
 }
+
+    /**
+     * Update this ActuatorData with values from another ActuatorData.
+     * 
+     * @param actuatorData The source ActuatorData
+     */
+    public void updateData(ActuatorData actuatorData)
+    {
+        if (actuatorData != null) {
+            this.setCommand(actuatorData.getCommand());
+            this.setValue(actuatorData.getValue());
+            this.setStateData(actuatorData.getStateData());
+            this.setResponseData(actuatorData.getResponseData());
+        }
+    }

@@ -1,0 +1,13 @@
+--- src/main/java/programmingtheiot/gda/connection/CloudClientConnector.java
++++ src/main/java/programmingtheiot/gda/connection/CloudClientConnector.java
+@@ -227,7 +227,9 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener
+                 }
+ 
+                 if (this.dataMsgListener != null) {
+-                    this.dataMsgListener.handleIncomingMessage(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, jsonData);
++                    jsonData = DataUtil.getInstance().actuatorDataToJson(actuatorData);
++                    ActuatorData cmdData = DataUtil.getInstance().jsonToActuatorData(jsonData);
++                    this.dataMsgListener.onActuatorCommandReceived(cmdData);
+                 } else {
+                     _Logger.warning("No data message listener set. Cannot forward LED command.");
+                 }

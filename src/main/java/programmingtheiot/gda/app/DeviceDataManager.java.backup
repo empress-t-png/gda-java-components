@@ -1,3 +1,8 @@
+# 1. First backup your current file
+cp ~/piot/gda-java-components/src/main/java/programmingtheiot/gda/app/DeviceDataManager.java ~/piot/gda-java-components/src/main/java/programmingtheiot/gda/app/DeviceDataManager.java.backup
+
+# 2. Create the new file with the integrated cloud client
+cat > ~/piot/gda-java-components/src/main/java/programmingtheiot/gda/app/DeviceDataManager.java << 'EOF'
 package programmingtheiot.gda.app;
 
 import java.util.logging.Level;
@@ -140,3 +145,7 @@ public class DeviceDataManager
         return false;
     }
 }
+EOF
+
+# 3. Verify the file was created
+ls -la ~/piot/gda-java-components/src/main/java/programmingtheiot/gda/app/DeviceDataManager.java

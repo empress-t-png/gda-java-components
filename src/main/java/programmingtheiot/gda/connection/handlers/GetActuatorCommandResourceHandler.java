@@ -57,7 +57,7 @@ public class GetActuatorCommandResourceHandler extends CoapResource
     
     // public methods
     
-    @Override
+    
     public boolean onActuatorDataUpdate(ActuatorData data)
     {
         if (data != null && this.actuatorData != null) {
@@ -79,7 +79,7 @@ public class GetActuatorCommandResourceHandler extends CoapResource
      * Implementation of IActuatorDataListener interface method.
      * This is required to handle incoming actuator commands.
      */
-    @Override
+    
     public void onActuatorCommandReceived(ActuatorData data)
     {
         if (data != null) {
@@ -90,7 +90,7 @@ public class GetActuatorCommandResourceHandler extends CoapResource
         }
     }
     
-    @Override
+    
     public void handleGET(CoapExchange context)
     {
         // Accept the request
@@ -106,7 +106,7 @@ public class GetActuatorCommandResourceHandler extends CoapResource
         context.respond(ResponseCode.CONTENT, jsonData);
     }
     
-    @Override
+    
     public void handlePUT(CoapExchange context)
     {
         context.accept();
@@ -116,7 +116,7 @@ public class GetActuatorCommandResourceHandler extends CoapResource
         context.respond(ResponseCode.CHANGED, "ActuatorData updated");
     }
     
-    @Override
+    
     public void handlePOST(CoapExchange context)
     {
         context.accept();
@@ -126,7 +126,7 @@ public class GetActuatorCommandResourceHandler extends CoapResource
         context.respond(ResponseCode.CREATED, "ActuatorData created");
     }
     
-    @Override
+    
     public void handleDELETE(CoapExchange context)
     {
         context.accept();

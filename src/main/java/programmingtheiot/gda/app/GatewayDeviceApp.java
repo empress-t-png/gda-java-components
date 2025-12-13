@@ -93,7 +93,7 @@ public class GatewayDeviceApp
         _Logger.info("Starting GDA...");
 
         try {
-            if (! ConfigUtil.getInstance().getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.TEST_EMPTY_APP_KEY)) {
+            if (! ConfigUtil.getInstance().getBoolean(ConfigConst.GATEWAY_DEVICE, ConfigConst.TEST_EMPTY_APP_KEY,false)) {
                 this.dataMgr = new DeviceDataManager();
             }
 

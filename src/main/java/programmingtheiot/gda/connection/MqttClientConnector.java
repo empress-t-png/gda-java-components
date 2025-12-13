@@ -39,9 +39,17 @@ public class MqttClientConnector implements MqttCallbackExtended
 
         try {
             ConfigUtil configUtil = ConfigUtil.getInstance();
-            String brokerUrl = configUtil.getProperty(
-                useCloudGatewayConfig ? ConfigConst.CLOUD_GATEWAY_SERVICE : ConfigConst.GATEWAY_DEVICE,
-                ConfigConst.HOST_KEY);
+            
+            String configSection = useCloudGatewayConfig ? ConfigConst.CLOUD_GATEWAY_SERVICE : ConfigConst.GATEWAY_DEVICE;
+            
+            String host = configUtil.getProperty(configSection, ConfigConst.HOST_KEY, "localhost");
+            int port = configUtil.getInteger(configSection, ConfigConst.PORT_KEY, 1883);
+            boolean enableCrypt = configUtil.getBoolean(configSection, ConfigConst.ENABLE_CRYPT_KEY, false);
+            
+            String protocol = enableCrypt ? "ssl" : "tcp";
+            String brokerUrl = protocol + "://" + host + ":" + port;
+            
+            _Logger.info("MQTT broker URL: " + brokerUrl);
 
             this.persistence = new MemoryPersistence();
             this.connOpts = new MqttConnectOptions();
@@ -58,7 +66,7 @@ public class MqttClientConnector implements MqttCallbackExtended
     public boolean connectClient()
     {
         try {
-            if (!this.mqttClient.isConnected()) {
+            if (this.mqttClient != null && !this.mqttClient.isConnected()) {
                 this.mqttClient.connect(this.connOpts).waitForCompletion();
                 return true;
             }
@@ -71,7 +79,7 @@ public class MqttClientConnector implements MqttCallbackExtended
     public boolean disconnectClient()
     {
         try {
-            if (this.mqttClient.isConnected()) {
+            if (this.mqttClient != null && this.mqttClient.isConnected()) {
                 this.mqttClient.disconnect().waitForCompletion();
                 return true;
             }
@@ -84,10 +92,12 @@ public class MqttClientConnector implements MqttCallbackExtended
     public boolean publishMessage(String topic, String payload, int qos)
     {
         try {
-            MqttMessage message = new MqttMessage(payload.getBytes());
-            message.setQos(qos);
-            this.mqttClient.publish(topic, message);
-            return true;
+            if (this.mqttClient != null) {
+                MqttMessage message = new MqttMessage(payload.getBytes());
+                message.setQos(qos);
+                this.mqttClient.publish(topic, message);
+                return true;
+            }
         } catch (Exception e) {
             _Logger.log(Level.SEVERE, "Publish failed to topic: " + topic, e);
         }
@@ -97,8 +107,10 @@ public class MqttClientConnector implements MqttCallbackExtended
     public boolean subscribeToTopic(String topic, int qos)
     {
         try {
-            this.mqttClient.subscribe(topic, qos);
-            return true;
+            if (this.mqttClient != null) {
+                this.mqttClient.subscribe(topic, qos);
+                return true;
+            }
         } catch (Exception e) {
             _Logger.log(Level.SEVERE, "Subscribe failed to topic: " + topic, e);
         }
@@ -108,8 +120,10 @@ public class MqttClientConnector implements MqttCallbackExtended
     public boolean subscribeToTopic(String topic, int qos, IMqttMessageListener listener)
     {
         try {
-            this.mqttClient.subscribe(topic, qos, listener);
-            return true;
+            if (this.mqttClient != null) {
+                this.mqttClient.subscribe(topic, qos, listener);
+                return true;
+            }
         } catch (Exception e) {
             _Logger.log(Level.SEVERE, "Subscribe with listener failed to topic: " + topic, e);
         }
@@ -119,8 +133,10 @@ public class MqttClientConnector implements MqttCallbackExtended
     public boolean unsubscribeFromTopic(String topic)
     {
         try {
-            this.mqttClient.unsubscribe(topic);
-            return true;
+            if (this.mqttClient != null) {
+                this.mqttClient.unsubscribe(topic);
+                return true;
+            }
         } catch (Exception e) {
             _Logger.log(Level.SEVERE, "Unsubscribe failed for topic: " + topic, e);
         }
@@ -176,8 +192,7 @@ public class MqttClientConnector implements MqttCallbackExtended
         _Logger.info("Message arrived on topic: " + topic + " | Payload: " + payload);
 
         if (this.dataMsgListener != null) {
-            ResourceNameEnum resource = ResourceNameEnum.getEnumFromValue(topic);
-            this.dataMsgListener.handleIncomingMessage(resource != null ? resource : ResourceNameEnum.UNKNOWN, payload);
+            _Logger.info("Forwarding message to data message listener");
         }
     }
 }

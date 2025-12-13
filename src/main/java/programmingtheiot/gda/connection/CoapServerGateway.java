@@ -142,7 +142,7 @@ public class CoapServerGateway
 	{
 		_Logger.info("Adding server resource handler chain: " + resourceType.getResourceName());
 		
-		List<String> resourceNames = resourceType.getResourceNameChain();
+		List<String> resourceNames = java.util.Arrays.asList(resourceType.getResourceName().split("/"));
 		Queue<String> queue = new ArrayBlockingQueue<>(resourceNames.size());
 		
 		queue.addAll(resourceNames);

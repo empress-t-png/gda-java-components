@@ -1,6 +1,9 @@
 package programmingtheiot.common;
 
 import java.util.Properties;
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.File;
 
 /**
  * Utility class for configuration management.
@@ -13,6 +16,7 @@ public final class ConfigUtil
     private ConfigUtil()
     {
         // Load defaults or properties file here if needed
+        loadConfig();
     }
 
     public static synchronized ConfigUtil getInstance()
@@ -21,6 +25,41 @@ public final class ConfigUtil
             instance = new ConfigUtil();
         }
         return instance;
+    }
+
+    private void loadConfig()
+    {
+        try {
+            // Try to load from classpath first (src/main/resources/)
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("GatewayDeviceApp.properties");
+            if (inputStream != null) {
+                props.load(inputStream);
+                inputStream.close();
+                System.out.println("ConfigUtil: Loaded properties from classpath: GatewayDeviceApp.properties");
+            } else {
+                // Try to load from file system (project root)
+                File configFile = new File("GatewayDeviceApp.properties");
+                if (configFile.exists()) {
+                    FileInputStream fis = new FileInputStream(configFile);
+                    props.load(fis);
+                    fis.close();
+                    System.out.println("ConfigUtil: Loaded properties from file: GatewayDeviceApp.properties");
+                } else {
+                    // Try config/ folder
+                    configFile = new File("config/GatewayDeviceApp.properties");
+                    if (configFile.exists()) {
+                        FileInputStream fis = new FileInputStream(configFile);
+                        props.load(fis);
+                        fis.close();
+                        System.out.println("ConfigUtil: Loaded properties from config/GatewayDeviceApp.properties");
+                    } else {
+                        System.out.println("ConfigUtil: Config file not found. Using defaults.");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("ConfigUtil: Failed to load config: " + e.getMessage());
+        }
     }
 
     public boolean getBoolean(String section, String key, boolean defaultValue)

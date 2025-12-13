@@ -41,10 +41,16 @@ public class MqttClientConnector implements MqttCallbackExtended
             ConfigUtil configUtil = ConfigUtil.getInstance();
             
             String configSection = useCloudGatewayConfig ? ConfigConst.CLOUD_GATEWAY_SERVICE : ConfigConst.GATEWAY_DEVICE;
+            _Logger.info("DEBUG: useCloudGatewayConfig=" + useCloudGatewayConfig + ", configSection=" + configSection);
             
             String host = configUtil.getProperty(configSection, ConfigConst.HOST_KEY, "localhost");
+            _Logger.info("DEBUG: Read host=" + host + " from section=" + configSection);
             int port = configUtil.getInteger(configSection, ConfigConst.PORT_KEY, 1883);
             boolean enableCrypt = configUtil.getBoolean(configSection, ConfigConst.ENABLE_CRYPT_KEY, false);
+            // Get authentication for cloud connections
+            String uid = configUtil.getProperty(configSection, ConfigConst.USER_NAME_TOKEN_KEY, "");
+            _Logger.info("DEBUG: Read uid=" + (uid.isEmpty() ? "EMPTY" : uid) + " from section=" + configSection);
+            String pwd = configUtil.getProperty(configSection, ConfigConst.USER_AUTH_TOKEN_KEY, "");
             
             String protocol = enableCrypt ? "ssl" : "tcp";
             String brokerUrl = protocol + "://" + host + ":" + port;
@@ -55,6 +61,19 @@ public class MqttClientConnector implements MqttCallbackExtended
             this.connOpts = new MqttConnectOptions();
             this.connOpts.setAutomaticReconnect(true);
             this.connOpts.setCleanSession(true);
+            
+            // Set authentication if provided
+            if (!uid.isEmpty()) {
+                this.connOpts.setUserName(uid);
+            }
+            if (!pwd.isEmpty()) {
+                this.connOpts.setPassword(pwd.toCharArray());
+            }
+            
+            // Log for cloud connections
+            if (useCloudGatewayConfig) {
+                _Logger.info("Cloud connection - UID: " + (uid.isEmpty() ? "NOT SET" : "SET"));
+            }
 
             this.mqttClient = new MqttAsyncClient(brokerUrl, MqttAsyncClient.generateClientId(), this.persistence);
             this.mqttClient.setCallback(this);
